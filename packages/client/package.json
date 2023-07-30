@@ -1,0 +1,13 @@
+{
+  "name": "@redistedi/client",
+  "version": "1.0.0",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "devDependencies": {
+    "typescript": "^5.1.6"
+  }
+}
