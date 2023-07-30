@@ -1,0 +1,21 @@
+{
+  "name": "redistedi",
+  "version": "1.0.0",
+  "description": "A relational redis client",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "workspaces": [
+    "./packages/*"
+  ],
+  "repository": "git@github.com:Confidenceman02/redistedi.git",
+  "author": "Confidenceman02",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@tsconfig/node14": "^14.1.0",
+    "typescript": "^5.1.6"
+  }
+}
