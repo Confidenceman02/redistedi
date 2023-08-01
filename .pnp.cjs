@@ -33,7 +33,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         [null, {\
           "packageLocation": "./",\
           "packageDependencies": [\
-            ["@tsconfig/node14", "npm:14.1.0"],\
+            ["@tsconfig/node16", "npm:16.1.0"],\
             ["redis", "npm:4.6.7"],\
             ["typescript", "patch:typescript@npm%3A5.1.6#~builtin<compat/typescript>::version=5.1.6&hash=5da071"]\
           ],\
@@ -175,11 +175,11 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "SOFT"\
         }]\
       ]],\
-      ["@tsconfig/node14", [\
-        ["npm:14.1.0", {\
-          "packageLocation": "./.yarn/cache/@tsconfig-node14-npm-14.1.0-db5025d686-8342dc30ed.zip/node_modules/@tsconfig/node14/",\
+      ["@tsconfig/node16", [\
+        ["npm:16.1.0", {\
+          "packageLocation": "./.yarn/cache/@tsconfig-node16-npm-16.1.0-058e6fabe7-a0a176492e.zip/node_modules/@tsconfig/node16/",\
           "packageDependencies": [\
-            ["@tsconfig/node14", "npm:14.1.0"]\
+            ["@tsconfig/node16", "npm:16.1.0"]\
           ],\
           "linkType": "HARD"\
         }]\
@@ -312,7 +312,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./",\
           "packageDependencies": [\
             ["redistedi", "workspace:."],\
-            ["@tsconfig/node14", "npm:14.1.0"],\
+            ["@tsconfig/node16", "npm:16.1.0"],\
             ["redis", "npm:4.6.7"],\
             ["typescript", "patch:typescript@npm%3A5.1.6#~builtin<compat/typescript>::version=5.1.6&hash=5da071"]\
           ],\

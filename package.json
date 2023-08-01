@@ -13,7 +13,7 @@
     "dist/"
   ],
   "devDependencies": {
-    "@tsconfig/node14": "^14.1.0",
+    "@tsconfig/node16": "^16.1.0",
     "typescript": "^5.1.6"
   },
   "dependencies": {
