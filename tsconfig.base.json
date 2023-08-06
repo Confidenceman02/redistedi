@@ -5,8 +5,5 @@
     "allowJs": true,
     "useDefineForClassFields": true,
     "esModuleInterop": false
-  },
-  "ts-node": {
-    "files": true
   }
 }
