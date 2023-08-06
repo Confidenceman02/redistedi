@@ -134,12 +134,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@redistedi/client@workspace:packages/client":
+"@redistedi/schema@workspace:packages/schema":
   version: 0.0.0-use.local
-  resolution: "@redistedi/client@workspace:packages/client"
+  resolution: "@redistedi/schema@workspace:packages/schema"
   dependencies:
     chai: ^4.3.7
-    myzod: ^1.10.0
     rambda: ^8.3.0
     typescript: ^5.1.6
   languageName: unknown
@@ -1878,13 +1877,6 @@ __metadata:
   version: 2.1.3
   resolution: "ms@npm:2.1.3"
   checksum: aa92de608021b242401676e35cfa5aa42dd70cbdc082b916da7fb925c542173e36bce97ea3e804923fe92c0ad991434e4a38327e15a1b5b5f945d66df615ae6d
-  languageName: node
-  linkType: hard
-
-"myzod@npm:^1.10.0":
-  version: 1.10.0
-  resolution: "myzod@npm:1.10.0"
-  checksum: a5d4eee5fed4205683a2e6b4557f7537979f098bd2b6040051fbc5a30d2bd6dcdf8fa20b16703ff8c56c69763bc226505d0c3155ac0bc7969e36773901d9af04
   languageName: node
   linkType: hard
 

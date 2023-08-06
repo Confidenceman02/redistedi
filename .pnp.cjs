@@ -16,14 +16,14 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         "reference": "workspace:."\
       },\
       {\
-        "name": "@redistedi/client",\
-        "reference": "workspace:packages/client"\
+        "name": "@redistedi/schema",\
+        "reference": "workspace:packages/schema"\
       }\
     ],\
     "enableTopLevelFallback": true,\
     "ignorePatternData": "(^(?:\\\\.yarn\\\\/sdks(?:\\\\/(?!\\\\.{1,2}(?:\\\\/|$))(?:(?:(?!(?:^|\\\\/)\\\\.{1,2}(?:\\\\/|$)).)*?)|$))$)",\
     "fallbackExclusionList": [\
-      ["@redistedi/client", ["workspace:packages/client"]],\
+      ["@redistedi/schema", ["workspace:packages/schema"]],\
       ["redistedi", ["workspace:."]]\
     ],\
     "fallbackPool": [\
@@ -261,13 +261,12 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD"\
         }]\
       ]],\
-      ["@redistedi/client", [\
-        ["workspace:packages/client", {\
-          "packageLocation": "./packages/client/",\
+      ["@redistedi/schema", [\
+        ["workspace:packages/schema", {\
+          "packageLocation": "./packages/schema/",\
           "packageDependencies": [\
-            ["@redistedi/client", "workspace:packages/client"],\
+            ["@redistedi/schema", "workspace:packages/schema"],\
             ["chai", "npm:4.3.7"],\
-            ["myzod", "npm:1.10.0"],\
             ["rambda", "npm:8.3.0"],\
             ["typescript", "patch:typescript@npm%3A5.1.6#~builtin<compat/typescript>::version=5.1.6&hash=5da071"]\
           ],\
@@ -2242,15 +2241,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/ms-npm-2.1.3-81ff3cfac1-aa92de6080.zip/node_modules/ms/",\
           "packageDependencies": [\
             ["ms", "npm:2.1.3"]\
-          ],\
-          "linkType": "HARD"\
-        }]\
-      ]],\
-      ["myzod", [\
-        ["npm:1.10.0", {\
-          "packageLocation": "./.yarn/cache/myzod-npm-1.10.0-a70bae5e27-a5d4eee5fe.zip/node_modules/myzod/",\
-          "packageDependencies": [\
-            ["myzod", "npm:1.10.0"]\
           ],\
           "linkType": "HARD"\
         }]\
