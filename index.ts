@@ -1,9 +1,14 @@
 import { RedisClientType, createClient } from "redis";
 
+type Optional<A> =
+  | {
+      ok: true;
+      value: A;
+    }
+  | { ok: false };
+
 export class RediStedi {
   #connection?: RedisClientType;
-
-  constructor() {}
 
   async connect(url: string, password: string): Promise<void> {
     if (this.#connection && this.#connection.isOpen && this.#connection.isReady)
@@ -24,9 +29,14 @@ export class RediStedi {
       throw new RediStediError(err);
     }
   }
+
+  client(): Optional<RedisClientType> {
+    if (this.#connection) return { ok: true, value: this.#connection };
+    return { ok: false };
+  }
 }
 
-class RediStediError extends Error {
+export class RediStediError extends Error {
   constructor(err: any) {
     super(err);
     this.name = this.constructor.name;

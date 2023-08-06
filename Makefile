@@ -2,8 +2,8 @@ DOCKER_COMPOSE= docker compose -f ./ops/development/docker-compose.yml
 Y=yarn
 
 
-.PHONY: start-test-environment
-start-test-environment:
+.PHONY: start-test-env
+start-test-env:
 	${DOCKER_COMPOSE} up -d redis-test
 
 .PHONY: test
