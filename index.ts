@@ -12,7 +12,7 @@ export class RediStedi {
     const client: RedisClientType = createClient({
       url: url,
       password: password,
-      name: "REDISTEDI",
+      name: "REDISTEDI_CLIENT",
       socket: { connectTimeout: 10000 },
     });
 
