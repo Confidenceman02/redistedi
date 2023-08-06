@@ -6,6 +6,10 @@ Y=yarn
 start-test-env:
 	${DOCKER_COMPOSE} up -d redis-test
 
+.PHONY: ci-test
+ci-test: start-test-env
+	make test
+
 .PHONY: test
 test:
 	${Y} mocha --exit -r @swc/register 'tests/**/*.spec.ts'
