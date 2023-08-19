@@ -16,14 +16,24 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         "reference": "workspace:."\
       },\
       {\
+        "name": "@redistedi/model",\
+        "reference": "workspace:packages/model"\
+      },\
+      {\
         "name": "@redistedi/schema",\
         "reference": "workspace:packages/schema"\
+      },\
+      {\
+        "name": "@redistedi/zod",\
+        "reference": "workspace:packages/zod"\
       }\
     ],\
     "enableTopLevelFallback": true,\
     "ignorePatternData": "(^(?:\\\\.yarn\\\\/sdks(?:\\\\/(?!\\\\.{1,2}(?:\\\\/|$))(?:(?:(?!(?:^|\\\\/)\\\\.{1,2}(?:\\\\/|$)).)*?)|$))$)",\
     "fallbackExclusionList": [\
+      ["@redistedi/model", ["workspace:packages/model"]],\
       ["@redistedi/schema", ["workspace:packages/schema"]],\
+      ["@redistedi/zod", ["workspace:packages/zod"]],\
       ["redistedi", ["workspace:."]]\
     ],\
     "fallbackPool": [\
@@ -261,13 +271,37 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD"\
         }]\
       ]],\
+      ["@redistedi/model", [\
+        ["workspace:packages/model", {\
+          "packageLocation": "./packages/model/",\
+          "packageDependencies": [\
+            ["@redistedi/model", "workspace:packages/model"],\
+            ["@redistedi/zod", "workspace:packages/zod"],\
+            ["chai", "npm:4.3.7"],\
+            ["typescript", "patch:typescript@npm%3A5.1.6#~builtin<compat/typescript>::version=5.1.6&hash=5da071"]\
+          ],\
+          "linkType": "SOFT"\
+        }]\
+      ]],\
       ["@redistedi/schema", [\
         ["workspace:packages/schema", {\
           "packageLocation": "./packages/schema/",\
           "packageDependencies": [\
             ["@redistedi/schema", "workspace:packages/schema"],\
+            ["@redistedi/zod", "workspace:packages/zod"],\
             ["chai", "npm:4.3.7"],\
             ["rambda", "npm:8.3.0"],\
+            ["typescript", "patch:typescript@npm%3A5.1.6#~builtin<compat/typescript>::version=5.1.6&hash=5da071"]\
+          ],\
+          "linkType": "SOFT"\
+        }]\
+      ]],\
+      ["@redistedi/zod", [\
+        ["workspace:packages/zod", {\
+          "packageLocation": "./packages/zod/",\
+          "packageDependencies": [\
+            ["@redistedi/zod", "workspace:packages/zod"],\
+            ["chai", "npm:4.3.7"],\
             ["typescript", "patch:typescript@npm%3A5.1.6#~builtin<compat/typescript>::version=5.1.6&hash=5da071"]\
           ],\
           "linkType": "SOFT"\

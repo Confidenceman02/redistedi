@@ -1,3 +1,2 @@
-import { ObjectShape } from "./zod";
-
+import { ObjectShape } from "@redistedi/zod";
 export class Schema<V extends ObjectShape> {}

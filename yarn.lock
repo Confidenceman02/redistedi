@@ -134,12 +134,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@redistedi/model@workspace:packages/model":
+  version: 0.0.0-use.local
+  resolution: "@redistedi/model@workspace:packages/model"
+  dependencies:
+    "@redistedi/zod": 0.0.1
+    chai: ^4.3.7
+    typescript: ^5.1.6
+  languageName: unknown
+  linkType: soft
+
 "@redistedi/schema@workspace:packages/schema":
   version: 0.0.0-use.local
   resolution: "@redistedi/schema@workspace:packages/schema"
   dependencies:
+    "@redistedi/zod": 0.0.1
     chai: ^4.3.7
     rambda: ^8.3.0
+    typescript: ^5.1.6
+  languageName: unknown
+  linkType: soft
+
+"@redistedi/zod@0.0.1, @redistedi/zod@workspace:packages/zod":
+  version: 0.0.0-use.local
+  resolution: "@redistedi/zod@workspace:packages/zod"
+  dependencies:
+    chai: ^4.3.7
     typescript: ^5.1.6
   languageName: unknown
   linkType: soft

@@ -1,6 +1,6 @@
 {
   "name": "@redistedi/schema",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,6 +12,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
+    "@redistedi/zod": "0.0.1",
     "rambda": "^8.3.0"
   }
 }
