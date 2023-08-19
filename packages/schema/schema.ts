@@ -3,6 +3,7 @@ import {
   number as ZodNumber,
   string as ZodString,
   boolean as ZodBoolean,
+  enum as ZodEnum,
   NullableType as ZodNullableType,
 } from "@redistedi/zod";
 
@@ -31,6 +32,12 @@ type ObjectShape = {
 };
 
 type AnyType = Type<any>;
+
+type ValueOf<T> = T[keyof T];
+
+type SchemaZodType<T> = {
+  [k in keyof T]: ZodAnyType;
+};
 
 export type Infer<T> = T extends AnyType
   ? T extends Type<infer K>
@@ -81,6 +88,20 @@ export class BooleanType extends Type<boolean> {
   }
 }
 
+export class EnumType<T> extends Type<ValueOf<T>> {
+  constructor(enumeration: T) {
+    super(ZodEnum(enumeration));
+  }
+}
+
 export class Schema<T extends ObjectShape> {
-  constructor(private readonly objectShape: T) {}
+  private [zodShape]: SchemaZodType<T>;
+  constructor(readonly objectShape: T) {
+    this[zodShape] = (
+      Object.keys(objectShape) as Array<keyof typeof objectShape>
+    ).reduce((acc, key) => {
+      acc[key] = objectShape[key].zodShape();
+      return acc;
+    }, {} as SchemaZodType<T>);
+  }
 }
