@@ -8,7 +8,7 @@ start-test-env:
 	${DOCKER_COMPOSE} up -d redis-test
 
 .PHONY: ci-test
-ci-test: start-test-env
+ci-test: start-test-env test-schema
 	make test
 
 .PHONY: test
