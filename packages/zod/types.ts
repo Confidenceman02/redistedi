@@ -854,7 +854,7 @@ type Flat<T> = T extends {}
     : { [key in keyof T]: T[key] }
   : T;
 
-type InferObjectShape<T extends ObjectShape> = Flat<
+export type InferObjectShape<T extends ObjectShape> = Flat<
   Eval<
     InferKeySignature<T> & {
       [key in OptionalKeys<T>]?: T[key] extends Type<infer K> ? K : any;

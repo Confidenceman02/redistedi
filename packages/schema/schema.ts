@@ -1,13 +1,15 @@
 import {
-  Type as ZodType,
-  Infer as ZodInfer,
-  AnyType as ZodAnyType,
-  number as ZodNumber,
-  string as ZodString,
-  boolean as ZodBoolean,
-  enum as ZodEnum,
-  NullableType as ZodNullableType,
+  Type as ZType,
+  AnyType as ZAnyType,
+  number as ZNumber,
+  string as ZString,
+  boolean as ZBoolean,
+  enum as ZEnum,
+  NullableType as ZNullableType,
+  object as ZObject,
+  Infer as ZInfer,
 } from "@redistedi/zod";
+import { InferObjectShape } from "@redistedi/zod/types";
 
 function clone<T>(value: T): T {
   if (typeof value !== "object" || value === null) {
@@ -29,6 +31,14 @@ function clone<T>(value: T): T {
 
 const zodShape = Symbol("zodShape");
 
+type ExtractZodObjectType<T> = {
+  [key in keyof T]: T[key] extends AnyType
+    ? T[key] extends Type<infer Z>
+      ? ReturnType<Type<Z>["zodShape"]>
+      : never
+    : never;
+};
+
 type ObjectShape = {
   [key: string]: AnyType;
 };
@@ -37,10 +47,6 @@ type AnyType = Type<any>;
 
 type ValueOf<T> = T[keyof T];
 
-type SchemaZodType<T> = {
-  [k in keyof T]: ZodAnyType;
-};
-
 export type Infer<T> = T extends AnyType
   ? T extends Type<infer K>
     ? K
@@ -48,8 +54,8 @@ export type Infer<T> = T extends AnyType
   : T;
 
 abstract class Type<T> {
-  private [zodShape]: ZodType<T>;
-  constructor(zShape: ZodAnyType) {
+  private [zodShape]: ZType<T>;
+  constructor(zShape: ZAnyType) {
     this[zodShape] = zShape;
   }
   nullable(): NullableType<this>;
@@ -59,19 +65,19 @@ abstract class Type<T> {
     }
     return new NullableType(this);
   }
-  zodShape(): ZodType<T>;
-  zodShape(): ZodType<T> {
+  zodShape(): ZType<T>;
+  zodShape(): ZType<T> {
     return this[zodShape];
   }
 }
 
 export class NullableType<T extends AnyType> extends Type<Infer<T> | null> {
   constructor(readonly schema: T) {
-    let arg: ZodType<ZodAnyType>;
-    if (schema.zodShape() instanceof ZodNullableType) {
+    let arg: ZType<ZAnyType>;
+    if (schema.zodShape() instanceof ZNullableType) {
       arg = schema.zodShape();
     } else {
-      arg = new ZodNullableType(schema.zodShape());
+      arg = new ZNullableType(schema.zodShape());
     }
     super(arg);
   }
@@ -79,36 +85,45 @@ export class NullableType<T extends AnyType> extends Type<Infer<T> | null> {
 
 export class StringType extends Type<string> {
   constructor() {
-    super(ZodString());
+    super(ZString());
   }
 }
 
 export class NumberType extends Type<number> {
   constructor() {
-    super(ZodNumber());
+    super(ZNumber());
   }
 }
 
 export class BooleanType extends Type<boolean> {
   constructor() {
-    super(ZodBoolean());
+    super(ZBoolean());
   }
 }
 
 export class EnumType<T> extends Type<ValueOf<T>> {
   constructor(enumeration: T) {
-    super(ZodEnum(enumeration));
+    super(ZEnum(enumeration));
   }
 }
 
 export class Schema<T extends ObjectShape> {
-  private [zodShape]: SchemaZodType<T>;
+  private [zodShape]: ZType<InferObjectShape<ExtractZodObjectType<T>>>;
   constructor(readonly objectShape: T) {
-    this[zodShape] = (
-      Object.keys(objectShape) as Array<keyof typeof objectShape>
-    ).reduce((acc, key) => {
-      acc[key] = objectShape[key].zodShape();
-      return acc;
-    }, {} as SchemaZodType<T>);
+    const obj: ExtractZodObjectType<T> = Object.keys(objectShape).reduce(
+      (acc, key) => {
+        acc[key] = objectShape[key].zodShape();
+        return acc;
+      },
+      {} as any,
+    );
+
+    this[zodShape] = ZObject(obj);
+  }
+
+  parse(
+    value: unknown,
+  ): ZInfer<ZType<InferObjectShape<ExtractZodObjectType<T>>>> {
+    return this[zodShape].parse(value);
   }
 }
