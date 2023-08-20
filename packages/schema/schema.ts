@@ -5,6 +5,7 @@ import {
   string as ZString,
   boolean as ZBoolean,
   enum as ZEnum,
+  array as ZArray,
   NullableType as ZNullableType,
   object as ZObject,
   Infer as ZInfer,
@@ -109,6 +110,12 @@ export class BooleanType extends Type<boolean> {
 export class EnumType<T> extends Type<ValueOf<T>> {
   constructor(enumeration: T) {
     super(ZEnum(enumeration));
+  }
+}
+
+export class ArrayType<T extends AnyType> extends Type<InternalInfer<T>[]> {
+  constructor(readonly schema: T) {
+    super(ZArray(schema.zodShape()));
   }
 }
 

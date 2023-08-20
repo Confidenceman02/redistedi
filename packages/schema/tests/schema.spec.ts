@@ -6,7 +6,7 @@ import {
   BooleanType,
   EnumType,
   NullableType,
-  Infer,
+  ArrayType,
 } from "../schema";
 import {
   StringType as ZStringType,
@@ -14,6 +14,7 @@ import {
   BooleanType as ZBooleanType,
   EnumType as ZEnumType,
   NullableType as ZNullableType,
+  ArrayType as ZArrayType,
 } from "@redistedi/zod";
 
 describe("primitives", () => {
@@ -87,6 +88,26 @@ describe("primitives", () => {
 
     assert.instanceOf(SUT, ZNullableType);
   });
+  it("is a ArrayType instance", () => {
+    enum SomeEnum {
+      Hi,
+      There,
+    }
+
+    const SUT = new ArrayType(new EnumType(SomeEnum));
+
+    assert.instanceOf(SUT, ArrayType);
+  });
+  it("is a ArrayType zod instance", () => {
+    enum SomeEnum {
+      Hi,
+      There,
+    }
+
+    const SUT = new ArrayType(new EnumType(SomeEnum)).zodShape();
+
+    assert.instanceOf(SUT, ZArrayType);
+  });
 });
 
 describe("Schema", () => {
@@ -142,5 +163,14 @@ describe("Schema", () => {
 
     assert.deepEqual(result1, { hello: null });
     assert.deepEqual(result2, { hello: "world" });
+  });
+  it("validates an object with ArrayType<StringType>", () => {
+    const obj = { hello: new ArrayType(new StringType()) };
+
+    const SUT = new Schema(obj);
+
+    const result1 = SUT.parse({ hello: ["world"] });
+
+    assert.deepEqual(result1, { hello: ["world"] });
   });
 });
