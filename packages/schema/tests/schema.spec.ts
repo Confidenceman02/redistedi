@@ -6,6 +6,7 @@ import {
   BooleanType,
   EnumType,
   NullableType,
+  Infer,
 } from "../schema";
 import {
   StringType as ZStringType,

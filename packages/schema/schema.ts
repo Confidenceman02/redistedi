@@ -47,7 +47,10 @@ type AnyType = Type<any>;
 
 type ValueOf<T> = T[keyof T];
 
-export type Infer<T> = T extends AnyType
+export type Infer<T> = T extends Schema<infer Z>
+  ? ZInfer<ZType<InferObjectShape<ExtractZodObjectType<Z>>>>
+  : never;
+type InternalInfer<T> = T extends AnyType
   ? T extends Type<infer K>
     ? K
     : any
@@ -71,7 +74,9 @@ abstract class Type<T> {
   }
 }
 
-export class NullableType<T extends AnyType> extends Type<Infer<T> | null> {
+export class NullableType<
+  T extends AnyType,
+> extends Type<InternalInfer<T> | null> {
   constructor(readonly schema: T) {
     let arg: ZType<ZAnyType>;
     if (schema.zodShape() instanceof ZNullableType) {
