@@ -2,8 +2,8 @@
   "extends": "@tsconfig/node16/tsconfig.json",
   "compilerOptions": {
     "declaration": true,
-    "allowJs": true,
+    "allowJs": false,
     "useDefineForClassFields": true,
-    "esModuleInterop": false
+    "esModuleInterop": true
   }
 }

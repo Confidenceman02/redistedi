@@ -289,8 +289,12 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [\
             ["@redistedi/schema", "workspace:packages/schema"],\
             ["@redistedi/zod", "workspace:packages/zod"],\
+            ["@tsconfig/node16", "npm:16.1.0"],\
+            ["@types/chai", "npm:4.3.5"],\
+            ["@types/mocha", "npm:10.0.1"],\
+            ["@types/node", "npm:20.4.8"],\
             ["chai", "npm:4.3.7"],\
-            ["rambda", "npm:8.3.0"],\
+            ["mocha", "npm:10.2.0"],\
             ["typescript", "patch:typescript@npm%3A5.1.6#~builtin<compat/typescript>::version=5.1.6&hash=5da071"]\
           ],\
           "linkType": "SOFT"\
@@ -2589,15 +2593,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/quick-lru-npm-5.1.1-e38e0edce3-a516faa255.zip/node_modules/quick-lru/",\
           "packageDependencies": [\
             ["quick-lru", "npm:5.1.1"]\
-          ],\
-          "linkType": "HARD"\
-        }]\
-      ]],\
-      ["rambda", [\
-        ["npm:8.3.0", {\
-          "packageLocation": "./.yarn/cache/rambda-npm-8.3.0-802f56e128-ca519b67f0.zip/node_modules/rambda/",\
-          "packageDependencies": [\
-            ["rambda", "npm:8.3.0"]\
           ],\
           "linkType": "HARD"\
         }]\

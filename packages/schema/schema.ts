@@ -1,4 +1,6 @@
 import {
+  Type as ZodType,
+  Infer as ZodInfer,
   AnyType as ZodAnyType,
   number as ZodNumber,
   string as ZodString,
@@ -46,7 +48,7 @@ export type Infer<T> = T extends AnyType
   : T;
 
 abstract class Type<T> {
-  private [zodShape]: ZodAnyType;
+  private [zodShape]: ZodType<T>;
   constructor(zShape: ZodAnyType) {
     this[zodShape] = zShape;
   }
@@ -55,18 +57,23 @@ abstract class Type<T> {
     if (this instanceof NullableType) {
       return clone(this);
     }
-    this[zodShape] = new ZodNullableType(this[zodShape]);
     return new NullableType(this);
   }
-  zodShape(): ZodAnyType;
-  zodShape(): ZodAnyType {
+  zodShape(): ZodType<T>;
+  zodShape(): ZodType<T> {
     return this[zodShape];
   }
 }
 
 export class NullableType<T extends AnyType> extends Type<Infer<T> | null> {
   constructor(readonly schema: T) {
-    super(new ZodNullableType(schema.zodShape()));
+    let arg: ZodType<ZodAnyType>;
+    if (schema.zodShape() instanceof ZodNullableType) {
+      arg = schema.zodShape();
+    } else {
+      arg = new ZodNullableType(schema.zodShape());
+    }
+    super(arg);
   }
 }
 
