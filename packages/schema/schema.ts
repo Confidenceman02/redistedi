@@ -44,7 +44,7 @@ type ObjectShape = {
   [key: string]: AnyType;
 };
 
-type AnyType = Type<any>;
+export type AnyType = Type<any>;
 
 type ValueOf<T> = T[keyof T];
 
