@@ -1,4 +1,4 @@
-import { RedisClientType, createClient } from "redis";
+import { RedisClientType } from "redis";
 
 type Optional<A> =
   | {
@@ -10,24 +10,19 @@ type Optional<A> =
 export class RediStedi {
   #connection?: RedisClientType;
 
-  async connect(url: string, password: string): Promise<void> {
+  async connection(conn: RedisClientType): Promise<void> {
     if (this.#connection && this.#connection.isOpen && this.#connection.isReady)
       return;
 
-    const client: RedisClientType = createClient({
-      url: url,
-      password: password,
-      name: "REDISTEDI_CLIENT",
-      socket: { connectTimeout: 10000 },
-    });
-
-    try {
-      await client.connect();
-      this.#connection = client;
-      return;
-    } catch (err: any) {
-      throw new RediStediError(err);
+    if (!conn.isOpen) {
+      try {
+        await conn.connect();
+      } catch (err: any) {
+        throw new RediStediError(err);
+      }
     }
+
+    this.#connection = conn;
   }
 
   client(): Optional<RedisClientType> {
