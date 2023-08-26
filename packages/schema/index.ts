@@ -7,7 +7,7 @@ import {
   AnyType,
 } from "./schema";
 
-export { StringType } from "./schema";
+export { StringType, Schema, ObjectShape, AnyType } from "./schema";
 
 export function string() {
   return new StringType();

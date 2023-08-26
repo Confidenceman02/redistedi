@@ -1,15 +1,22 @@
 import { expect, assert } from "chai";
 import { RediStedi, RediStediError } from "../index";
 import { createClient } from "redis";
+import { Schema, string } from "@redistedi/schema";
 
 const REDISTEDI_PORT = "6376";
 const REDISTEDI_IP = "localhost";
 const REDISTEDI_PASSWORD = "somepassword";
 
+const baseSchema = new Schema({ hello: string(), world: string() });
+
+const baseModels = {
+  helloWorld: baseSchema,
+};
+
 describe("redistedi", () => {
   it("produces TypeError with invalid URL", async () => {
     try {
-      await new RediStedi().connection(
+      await new RediStedi(baseModels).connection(
         createClient({ url: "someurl", password: "somepassword" }),
       );
     } catch (err) {
@@ -18,7 +25,7 @@ describe("redistedi", () => {
   });
   it("produces RediStediError when connection fails", async () => {
     try {
-      await new RediStedi().connection(
+      await new RediStedi(baseModels).connection(
         createClient({
           url: "redis://localhost:6311",
           password: "somepassword",
@@ -29,7 +36,7 @@ describe("redistedi", () => {
     }
   });
   it("establishes connection PING", async () => {
-    const instance = new RediStedi();
+    const instance = new RediStedi(baseModels);
     await instance.connection(
       createClient({
         url: `redis://${REDISTEDI_IP}:${REDISTEDI_PORT}`,

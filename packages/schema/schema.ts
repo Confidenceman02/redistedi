@@ -40,7 +40,7 @@ type ExtractZodObjectType<T> = {
     : never;
 };
 
-type ObjectShape = {
+export type ObjectShape = {
   [key: string]: AnyType;
 };
 
@@ -133,9 +133,7 @@ export class Schema<T extends ObjectShape> {
     this[zodShape] = ZObject(obj);
   }
 
-  parse(
-    value: unknown,
-  ): ZInfer<ZType<InferObjectShape<ExtractZodObjectType<T>>>> {
+  parse(value: unknown): Infer<Schema<T>> {
     return this[zodShape].parse(value);
   }
 }
