@@ -32,6 +32,8 @@ function clone<T>(value: T): T {
 
 const zodShape = Symbol("zodShape");
 
+export type ExtractObjectShape<T> = T extends Schema<infer S> ? S : never;
+
 type ExtractZodObjectType<T> = {
   [key in keyof T]: T[key] extends AnyType
     ? T[key] extends Type<infer Z>

@@ -1,3 +1,5 @@
-import { ObjectShape } from "@redistedi/zod";
+import { Schema, ObjectShape } from "@redistedi/schema";
 
-class Model {}
+export class Model<T extends ObjectShape> {
+  constructor(arg: Schema<T>) {}
+}
