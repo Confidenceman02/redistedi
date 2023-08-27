@@ -4,12 +4,21 @@ import { RedisClientType } from "redis";
 const schemaKey = Symbol("schemaKey");
 const connectionKey = Symbol("connectionKey");
 const objectKeys = Symbol("objectKeys");
+const redisModelKey = Symbol("redisModelIdKey");
+export const ModelId = Symbol("ModelId");
 
-export type IModel<T extends ObjectShape> = Infer<Schema<T>> & {
+type IModel<T extends ObjectShape> = Infer<Schema<T>> & {
   toObject(): Infer<Schema<T>>;
+  toJSON(): string;
+  save(): RedisModel<T>;
   [schemaKey]: Schema<T>;
   [connectionKey]: RedisClientType | undefined;
   [objectKeys]: [keyof Infer<Schema<T>>];
+};
+
+export type RedisModel<T extends ObjectShape> = Infer<Schema<T>> & {
+  toObject(): { [ModelId]: string } & Infer<Schema<T>>;
+  [redisModelKey]: string;
 };
 
 export type Model<T extends ObjectShape> = {
@@ -38,6 +47,10 @@ export function modelBuilder<T extends ObjectShape>(
         {} as Infer<Schema<T>>,
       );
       return obj;
+    };
+
+    this.toJSON = function () {
+      return JSON.stringify(this.toObject());
     };
   }
 
