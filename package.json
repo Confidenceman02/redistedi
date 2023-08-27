@@ -27,6 +27,6 @@
   "dependencies": {
     "@redistedi/model": "workspace:^",
     "@redistedi/schema": "workspace:^",
-    "redis": "^4.6.7"
+    "redis": "^4.6.8"
   }
 }

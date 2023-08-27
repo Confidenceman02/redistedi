@@ -13,7 +13,7 @@ const baseModels = {
   helloWorld: baseSchema,
 };
 
-describe("redistedi", () => {
+describe("RediStedi.connection", () => {
   it("produces TypeError with invalid URL", async () => {
     try {
       await new RediStedi(baseModels).connection(
@@ -37,8 +37,8 @@ describe("redistedi", () => {
   });
   it("establishes connection PING", async () => {
     const instance = new RediStedi(baseModels);
-    const helloModel = instance.model("helloWorld");
-    const int = new helloModel({ hello: "Hello", world: "World" });
+    // const helloModel = instance.model("helloWorld");
+    // const int = new helloModel({ hello: "Hello", world: "World" });
     await instance.connection(
       createClient({
         url: `redis://${REDISTEDI_IP}:${REDISTEDI_PORT}`,

@@ -13,6 +13,10 @@
   },
   "dependencies": {
     "@redistedi/schema": "workspace:^",
-    "@redistedi/zod": "0.0.1"
+    "@redistedi/zod": "workspace:^",
+    "redis": "^4.6.8"
+  },
+  "peerDependencies": {
+    "redis": "^4.6.8"
   }
 }

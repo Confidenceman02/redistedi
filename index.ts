@@ -20,7 +20,7 @@ abstract class Base<T> {
 }
 
 export class RediStedi<T extends EntityShapes<Schema<any>>> extends Base<T> {
-  #connection?: RedisClientType;
+  #connection: RedisClientType | undefined = undefined;
   schemas: T;
 
   constructor(schemas: T) {
@@ -28,12 +28,8 @@ export class RediStedi<T extends EntityShapes<Schema<any>>> extends Base<T> {
     this.schemas = schemas;
   }
 
-  test<K extends keyof T>(name: K): T[K] {
-    return this.schemas[name];
-  }
   model<K extends keyof T>(name: K): Model<ExtractObjectShape<T[K]>> {
-    const currentSchema = this.schemas[name];
-    return modelBuilder(currentSchema);
+    return modelBuilder(this.schemas[name], this.#connection);
   }
 
   async connection(conn: RedisClientType): Promise<void> {
