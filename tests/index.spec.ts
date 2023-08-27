@@ -38,7 +38,7 @@ describe("redistedi", () => {
   it("establishes connection PING", async () => {
     const instance = new RediStedi(baseModels);
     const helloModel = instance.model("helloWorld");
-    // helloModel({ hello: "Hello", world: "World" });
+    const int = new helloModel({ hello: "Hello", world: "World" });
     await instance.connection(
       createClient({
         url: `redis://${REDISTEDI_IP}:${REDISTEDI_PORT}`,

@@ -11,7 +11,6 @@ export {
   StringType,
   Schema,
   ObjectShape,
-  AnyType,
   Infer,
   ExtractObjectShape,
 } from "./schema";
