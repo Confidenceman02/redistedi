@@ -1,1 +1,1 @@
-export { modelBuilder, Model } from "./model";
+export { modelBuilder, Model, ModelId } from "./model";
