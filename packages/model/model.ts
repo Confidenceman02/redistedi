@@ -2,12 +2,17 @@ import { Schema, ObjectShape, Infer } from "@redistedi/schema";
 import { RedisClientType } from "redis";
 import { Exit } from "@effect/io/Exit";
 import * as Effect from "@effect/io/Effect";
+import { pipe } from "@effect/data/Function";
 
 const schemaKey = Symbol("schemaKey");
 const connectionKey = Symbol("connectionKey");
 const objectKeys = Symbol("objectKeys");
-const idxKeyPrefix = Symbol("idxKeyPrefix");
+const entityIDPrefixKey = Symbol("entityIDPrefixKey");
 export const ModelID = Symbol("ModelId");
+
+type IdxPrefix = "rs:$entity$:";
+type EntityCounterPrefix = `${IdxPrefix}$counter$:${string}`;
+type EntityIDPrefix = `${IdxPrefix}${string}:`;
 
 export type StediModel<T extends ObjectShape> = Infer<Schema<T>> & {
   toObject(): StediObject<T>;
@@ -25,7 +30,7 @@ type IRediModel<T extends ObjectShape> = Infer<Schema<T>> & {
   [schemaKey]: Schema<T>;
   [connectionKey]: RedisClientType | undefined;
   [objectKeys]: [keyof Infer<Schema<T>>];
-  [idxKeyPrefix]: `rs$entity$:${string}`;
+  [entityIDPrefixKey]: EntityIDPrefix;
 };
 
 export type RediModel<T extends ObjectShape> = {
@@ -62,14 +67,14 @@ export function stediBuilder<T extends ObjectShape>(
 
 export function rediBuilder<T extends ObjectShape>(
   schema: Schema<T>,
-  idx: string,
+  name: string,
   connection: RedisClientType | undefined,
 ): RediModel<T> {
   function Redi(this: IRediModel<T>, arg: Infer<Schema<T>>) {
     this[schemaKey] = schema;
     this[connectionKey] = connection;
     this[objectKeys] = Object.keys(arg) as [keyof Infer<Schema<T>>];
-    this[idxKeyPrefix] = `rs$entity$:${idx}`;
+    this[entityIDPrefixKey] = `rs:$entity$:${name}:`;
     for (let key in arg) {
       const k = key as keyof Infer<Schema<T>>;
       this[k] = arg[key] as any;
@@ -90,30 +95,87 @@ export function rediBuilder<T extends ObjectShape>(
       return JSON.stringify(this.toObject());
     };
 
-    this.save = function () {
+    this.save = async function () {
       const stediInstance = stediBuilder(
         this.toObject(),
-        this[idxKeyPrefix],
+        this[entityIDPrefixKey],
         this[schemaKey],
         this[connectionKey],
       );
+      const { script, inputs } = luaEntityCreate(
+        [`rs:$entity$:$counter$:${name}`, `rs:$entity$:${name}:`],
+        [],
+      );
 
-      const eff = Effect.tryPromise<StediModel<T>, ModelError>({
+      const persist = Effect.tryPromise<unknown, ModelError>({
         try: () => {
-          return new Promise((resolve, reject) => {
-            if (!this[connectionKey])
-              return reject(new ModelError("RedisClientType is undefined"));
-            return resolve(new stediInstance());
-          });
+          if (!this[connectionKey])
+            throw new ModelError("RedisClientType is undefined");
+          return this[connectionKey].EVAL(script, inputs);
         },
         catch: (unknown) => new ModelError(unknown),
       });
 
-      return Effect.runPromiseExit(eff);
+      const mappedPersisted = pipe(
+        persist,
+        Effect.map(arrayReply),
+        Effect.map(console.log),
+      );
+
+      // await Effect.runPromise(mappedPersisted);
+
+      const ret = Effect.tryPromise<StediModel<T>, ModelError>({
+        try: () => {
+          if (!this[connectionKey])
+            throw new ModelError("RedisClientType is undefined");
+          return new Promise((resolve) => resolve(new stediInstance()));
+        },
+        catch: (unknown) => new ModelError(unknown),
+      });
+
+      return await Effect.runPromiseExit(ret);
     };
   }
 
   return Redi as any as RediModel<T>;
+}
+
+// LUA
+
+function luaEntityCreate(
+  keys: [EntityCounterPrefix, EntityIDPrefix],
+  argv: Array<any>,
+) {
+  return {
+    script: `
+        local counterID = KEYS[1]
+        local entityIDPrefix = KEYS[2]
+        --[[
+          1 - Get the next entityID
+        --]]
+        local incrID = redis.pcall('INCR', counterID)
+
+        --[[
+          2 - Build the entity values from ARGV
+        --]]
+
+        local ret = redis.pcall('HSET', entityIDPrefix .. incrID, 'someField', 'someValue', 'someOtherField', 'someOtherValue')
+
+        ${luaLogEncode("someObj")}
+        ${luaLogEncode("ret")}
+        ${luaLogEncode("incrID")}
+        ${luaLogEncode("KEYS")}
+
+        return ret
+    `,
+    inputs: { keys, arguments: argv },
+  };
+}
+
+function luaLogEncode(name: string) {
+  return `
+     redis.log(redis.LOG_WARNING, cjson.encode(${name}))
+  `;
 }
 
 export class ModelError extends Error {
@@ -122,4 +184,10 @@ export class ModelError extends Error {
     super(err);
     this.name = this.constructor.name;
   }
+}
+
+// UTILS
+function arrayReply(a: unknown): Array<unknown> {
+  if (Array.isArray(a)) return a;
+  return [a];
 }
