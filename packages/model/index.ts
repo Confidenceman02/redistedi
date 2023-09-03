@@ -1,1 +1,8 @@
-export { modelBuilder, Model, ModelId } from "./model";
+export {
+  rediBuilder,
+  stediBuilder,
+  RediModel,
+  ModelID,
+  ModelError,
+  StediModel,
+} from "./model";

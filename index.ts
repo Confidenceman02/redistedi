@@ -1,6 +1,6 @@
 import { RedisClientType } from "redis";
 import { Schema, ExtractObjectShape } from "@redistedi/schema";
-import { modelBuilder, Model } from "@redistedi/model";
+import { rediBuilder, RediModel } from "@redistedi/model";
 
 type Optional<A> =
   | {
@@ -16,7 +16,9 @@ type EntityShapes<T> = {
 abstract class Base<T> {
   constructor() {}
 
-  abstract model<K extends keyof T>(key: K): Model<ExtractObjectShape<T[K]>>;
+  abstract model<K extends keyof T>(
+    key: K,
+  ): RediModel<ExtractObjectShape<T[K]>>;
 }
 
 export class RediStedi<T extends EntityShapes<Schema<any>>> extends Base<T> {
@@ -28,8 +30,8 @@ export class RediStedi<T extends EntityShapes<Schema<any>>> extends Base<T> {
     this.schemas = schemas;
   }
 
-  model<K extends keyof T>(name: K): Model<ExtractObjectShape<T[K]>> {
-    return modelBuilder(this.schemas[name], this.#connection);
+  model<K extends keyof T>(name: K): RediModel<ExtractObjectShape<T[K]>> {
+    return rediBuilder(this.schemas[name], this.#connection);
   }
 
   async connection(conn: RedisClientType): Promise<void> {
