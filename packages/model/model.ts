@@ -6,6 +6,7 @@ import * as Effect from "@effect/io/Effect";
 const schemaKey = Symbol("schemaKey");
 const connectionKey = Symbol("connectionKey");
 const objectKeys = Symbol("objectKeys");
+const idxKeyPrefix = Symbol("idxKeyPrefix");
 export const ModelID = Symbol("ModelId");
 
 export type StediModel<T extends ObjectShape> = Infer<Schema<T>> & {
@@ -24,6 +25,7 @@ type IRediModel<T extends ObjectShape> = Infer<Schema<T>> & {
   [schemaKey]: Schema<T>;
   [connectionKey]: RedisClientType | undefined;
   [objectKeys]: [keyof Infer<Schema<T>>];
+  [idxKeyPrefix]: `rs$entity$:${string}`;
 };
 
 export type RediModel<T extends ObjectShape> = {
@@ -60,12 +62,14 @@ export function stediBuilder<T extends ObjectShape>(
 
 export function rediBuilder<T extends ObjectShape>(
   schema: Schema<T>,
+  idx: string,
   connection: RedisClientType | undefined,
 ): RediModel<T> {
   function Redi(this: IRediModel<T>, arg: Infer<Schema<T>>) {
     this[schemaKey] = schema;
     this[connectionKey] = connection;
     this[objectKeys] = Object.keys(arg) as [keyof Infer<Schema<T>>];
+    this[idxKeyPrefix] = `rs$entity$:${idx}`;
     for (let key in arg) {
       const k = key as keyof Infer<Schema<T>>;
       this[k] = arg[key] as any;
@@ -87,16 +91,21 @@ export function rediBuilder<T extends ObjectShape>(
     };
 
     this.save = function () {
-      const fakeID = "someID";
       const stediInstance = stediBuilder(
         this.toObject(),
-        fakeID,
+        this[idxKeyPrefix],
         this[schemaKey],
         this[connectionKey],
       );
 
       const eff = Effect.tryPromise<StediModel<T>, ModelError>({
-        try: () => new Promise((resolve) => resolve(new stediInstance())),
+        try: () => {
+          return new Promise((resolve, reject) => {
+            if (!this[connectionKey])
+              return reject(new ModelError("RedisClientType is undefined"));
+            return resolve(new stediInstance());
+          });
+        },
         catch: (unknown) => new ModelError(unknown),
       });
 
@@ -108,6 +117,7 @@ export function rediBuilder<T extends ObjectShape>(
 }
 
 export class ModelError extends Error {
+  readonly _tag: string = "ModelError";
   constructor(err: any) {
     super(err);
     this.name = this.constructor.name;

@@ -31,7 +31,7 @@ export class RediStedi<T extends EntityShapes<Schema<any>>> extends Base<T> {
   }
 
   model<K extends keyof T>(name: K): RediModel<ExtractObjectShape<T[K]>> {
-    return rediBuilder(this.schemas[name], this.#connection);
+    return rediBuilder(this.schemas[name], name as string, this.#connection);
   }
 
   async connection(conn: RedisClientType): Promise<void> {
