@@ -104,7 +104,7 @@ export function rediBuilder<T extends ObjectShape>(
       );
       const { script, inputs } = luaEntityCreate(
         [`rs:$entity$:$counter$:${name}`, `rs:$entity$:${name}:`],
-        [],
+        [this.toJSON()],
       );
 
       const persist = Effect.tryPromise<unknown, ModelError>({
@@ -122,7 +122,7 @@ export function rediBuilder<T extends ObjectShape>(
         Effect.map(console.log),
       );
 
-      // await Effect.runPromise(mappedPersisted);
+      await Effect.runPromise(mappedPersisted);
 
       const ret = Effect.tryPromise<StediModel<T>, ModelError>({
         try: () => {
@@ -148,22 +148,33 @@ function luaEntityCreate(
 ) {
   return {
     script: `
+        local insert = table.insert
         local counterID = KEYS[1]
         local entityIDPrefix = KEYS[2]
+        local decodedObj = cjson.decode(ARGV[1])
+
         --[[
           1 - Get the next entityID
         --]]
+
         local incrID = redis.pcall('INCR', counterID)
 
         --[[
-          2 - Build the entity values from ARGV
+          2 - Prepare HSET args
         --]]
 
-        local ret = redis.pcall('HSET', entityIDPrefix .. incrID, 'someField', 'someValue', 'someOtherField', 'someOtherValue')
+        ${luaHSET.func}
 
-        ${luaLogEncode("someObj")}
-        ${luaLogEncode("ret")}
-        ${luaLogEncode("incrID")}
+        --[[
+          3 - Persist
+        --]]
+
+        local builtArgs = ${luaHSET.prepare(
+          "entityIDPrefix .. incrID",
+          "decodedObj",
+        )}
+        local ret = redis.pcall(unpack(builtArgs))
+
         ${luaLogEncode("KEYS")}
 
         return ret
@@ -177,6 +188,22 @@ function luaLogEncode(name: string) {
      redis.log(redis.LOG_WARNING, cjson.encode(${name}))
   `;
 }
+
+const luaHSET = {
+  func: `
+        local function buildCommand(id, T)
+          local values = {"HSET", id}
+          for k,v in pairs(T) do 
+            insert(values, k)
+            insert(values, v)
+          end
+          return values
+        end
+    `,
+  prepare: (id: string, refString: string) => {
+    return `buildCommand("${id}",${refString})`;
+  },
+};
 
 export class ModelError extends Error {
   readonly _tag: string = "ModelError";
