@@ -30,14 +30,14 @@ function clone<T>(value: T): T {
   return cpy;
 }
 
-const zodShape = Symbol("zodShape");
+const zodShapeEgress = Symbol("zodShapeEgress");
 
 export type ExtractObjectShape<T> = T extends Schema<infer S> ? S : never;
 
 type ExtractZodObjectType<T> = {
   [key in keyof T]: T[key] extends AnyType
     ? T[key] extends Type<infer Z>
-      ? ReturnType<Type<Z>["zodShape"]>
+      ? ReturnType<Type<Z>["zodShapeEgress"]>
       : never
     : never;
 };
@@ -60,9 +60,9 @@ type InternalInfer<T> = T extends AnyType
   : T;
 
 abstract class Type<T> {
-  private [zodShape]: ZType<T>;
-  constructor(zShape: ZAnyType) {
-    this[zodShape] = zShape;
+  private [zodShapeEgress]: ZType<T>;
+  constructor(zShapeEgress: ZAnyType) {
+    this[zodShapeEgress] = zShapeEgress;
   }
   nullable(): NullableType<this>;
   nullable(): any {
@@ -71,9 +71,9 @@ abstract class Type<T> {
     }
     return new NullableType(this);
   }
-  zodShape(): ZType<T>;
-  zodShape(): ZType<T> {
-    return this[zodShape];
+  zodShapeEgress(): ZType<T>;
+  zodShapeEgress(): ZType<T> {
+    return this[zodShapeEgress];
   }
 }
 
@@ -82,10 +82,10 @@ export class NullableType<
 > extends Type<InternalInfer<T> | null> {
   constructor(readonly schema: T) {
     let arg: ZType<ZAnyType>;
-    if (schema.zodShape() instanceof ZNullableType) {
-      arg = schema.zodShape();
+    if (schema.zodShapeEgress() instanceof ZNullableType) {
+      arg = schema.zodShapeEgress();
     } else {
-      arg = new ZNullableType(schema.zodShape());
+      arg = new ZNullableType(schema.zodShapeEgress());
     }
     super(arg);
   }
@@ -117,25 +117,25 @@ export class EnumType<T> extends Type<ValueOf<T>> {
 
 export class ArrayType<T extends AnyType> extends Type<InternalInfer<T>[]> {
   constructor(readonly schema: T) {
-    super(ZArray(schema.zodShape()));
+    super(ZArray(schema.zodShapeEgress()));
   }
 }
 
 export class Schema<T extends ObjectShape> {
-  private [zodShape]: ZType<InferObjectShape<ExtractZodObjectType<T>>>;
+  private [zodShapeEgress]: ZType<InferObjectShape<ExtractZodObjectType<T>>>;
   constructor(readonly objectShape: T) {
     const obj: ExtractZodObjectType<T> = Object.keys(objectShape).reduce(
       (acc, key) => {
-        acc[key] = objectShape[key].zodShape();
+        acc[key] = objectShape[key].zodShapeEgress();
         return acc;
       },
       {} as any,
     );
 
-    this[zodShape] = ZObject(obj);
+    this[zodShapeEgress] = ZObject(obj);
   }
 
   parse(value: unknown): Infer<Schema<T>> {
-    return this[zodShape].parse(value);
+    return this[zodShapeEgress].parse(value);
   }
 }

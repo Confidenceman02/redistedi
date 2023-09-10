@@ -24,7 +24,7 @@ describe("primitives", () => {
     assert.instanceOf(SUT, StringType);
   });
   it("is a StringType zod instance", () => {
-    const SUT = new StringType().zodShape();
+    const SUT = new StringType().zodShapeEgress();
 
     assert.instanceOf(SUT, ZStringType);
   });
@@ -34,7 +34,7 @@ describe("primitives", () => {
     assert.instanceOf(SUT, NumberType);
   });
   it("is a NumberType zod instance", () => {
-    const SUT = new NumberType().zodShape();
+    const SUT = new NumberType().zodShapeEgress();
 
     assert.instanceOf(SUT, ZNumberType);
   });
@@ -44,7 +44,7 @@ describe("primitives", () => {
     assert.instanceOf(SUT, BooleanType);
   });
   it("is a BooleanType zod instance", () => {
-    const SUT = new BooleanType().zodShape();
+    const SUT = new BooleanType().zodShapeEgress();
 
     assert.instanceOf(SUT, ZBooleanType);
   });
@@ -64,7 +64,7 @@ describe("primitives", () => {
       There,
     }
 
-    const SUT = new EnumType(SomeEnum).zodShape();
+    const SUT = new EnumType(SomeEnum).zodShapeEgress();
 
     assert.instanceOf(SUT, ZEnumType);
   });
@@ -84,7 +84,7 @@ describe("primitives", () => {
       There,
     }
 
-    const SUT = new NullableType(new EnumType(SomeEnum)).zodShape();
+    const SUT = new NullableType(new EnumType(SomeEnum)).zodShapeEgress();
 
     assert.instanceOf(SUT, ZNullableType);
   });
@@ -104,7 +104,7 @@ describe("primitives", () => {
       There,
     }
 
-    const SUT = new ArrayType(new EnumType(SomeEnum)).zodShape();
+    const SUT = new ArrayType(new EnumType(SomeEnum)).zodShapeEgress();
 
     assert.instanceOf(SUT, ZArrayType);
   });
