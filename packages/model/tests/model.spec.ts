@@ -78,7 +78,7 @@ describe("RediModel.save", () => {
     if (returnVal._tag == "Success") {
       return assert.deepEqual(returnVal.value.toObject(), {
         hello: "world",
-        [ModelID]: "1",
+        [ModelID]: 1,
       });
     }
     {
@@ -98,14 +98,26 @@ describe("RediModel.save", () => {
     const SUT = await obj2.save();
 
     if (SUT._tag == "Success") {
-      // console.log(SUT.value.toObject());
       return assert.deepEqual(SUT.value.toObject(), {
         hello: "next world",
-        [ModelID]: "2",
+        [ModelID]: 2,
       });
     }
     {
       expect.fail();
     }
+  });
+
+  it("persists model with StringType", async () => {
+    const obj = { hello: string() };
+    const schema = new Schema(obj);
+    const builder = rediBuilder(schema, "someModelName", client);
+
+    const obj1 = new builder({ hello: "world" });
+    await obj1.save();
+
+    const SUT = await client.HGETALL("rs:$entity$:someModelName:1");
+
+    assert.deepEqual(SUT, { "rs:$entity$:$ID$": "1", hello: "world" });
   });
 });

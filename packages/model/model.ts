@@ -2,6 +2,12 @@ import { Schema, ObjectShape, Infer } from "@redistedi/schema";
 import { RedisClientType } from "redis";
 import { Exit } from "@effect/io/Exit";
 import * as Effect from "@effect/io/Effect";
+import {
+  object as ZObject,
+  string as ZString,
+  Infer as ZInfer,
+  number as ZNumber,
+} from "@redistedi/zod";
 import { pipe } from "@effect/data/Function";
 import { HSETFunc, HSETPrepare, LogEncode } from "./lua";
 
@@ -11,9 +17,12 @@ const objectKeys = Symbol("objectKeys");
 const entityIDPrefixKey = Symbol("entityIDPrefixKey");
 export const ModelID = Symbol("ModelId");
 
+const saveLuaReply = ZObject({ response: ZNumber(), id: ZNumber() });
+
 type IdxPrefix = "rs:$entity$:";
 type EntityCounterPrefix = `${IdxPrefix}$counter$:${string}`;
-type EntityIDPrefix = `${IdxPrefix}${string}:`;
+type EntityKeyPrefix = `${IdxPrefix}${string}:`;
+type EntityIDFieldPrefix = `${IdxPrefix}$ID$`;
 
 interface EvalOptions {
   keys?: Array<string>;
@@ -23,8 +32,8 @@ interface EvalOptions {
 export type StediModel<T extends ObjectShape> = Infer<Schema<T>> & {
   toObject(): StediObject<T>;
   toJSON(): string;
-  [ModelID]: string;
-  [entityIDPrefixKey]: EntityIDPrefix;
+  [ModelID]: number;
+  [entityIDPrefixKey]: EntityKeyPrefix;
   [schemaKey]: Schema<T>;
   [connectionKey]: RedisClientType | undefined;
   [objectKeys]: [keyof Infer<Schema<T>>];
@@ -37,7 +46,7 @@ type IRediModel<T extends ObjectShape> = Infer<Schema<T>> & {
   [schemaKey]: Schema<T>;
   [connectionKey]: RedisClientType | undefined;
   [objectKeys]: [keyof Infer<Schema<T>>];
-  [entityIDPrefixKey]: EntityIDPrefix;
+  [entityIDPrefixKey]: EntityKeyPrefix;
 };
 
 export type RediModel<T extends ObjectShape> = {
@@ -49,13 +58,13 @@ export type StediModelBuilder<T extends ObjectShape> = {
 
 export type ModelObject<T extends ObjectShape> = Infer<Schema<T>>;
 export type StediObject<T extends ObjectShape> = Infer<Schema<T>> & {
-  [ModelID]: string;
+  [ModelID]: number;
 };
 
 export function stediBuilder<T extends ObjectShape>(
   obj: Infer<Schema<T>>,
-  id: string,
-  entityIdPrefix: EntityIDPrefix,
+  id: number,
+  entityIdPrefix: EntityKeyPrefix,
   schema: Schema<T>,
   connection: RedisClientType | undefined,
 ): StediModelBuilder<T> {
@@ -87,14 +96,14 @@ export function stediBuilder<T extends ObjectShape>(
 
 export function rediBuilder<T extends ObjectShape>(
   schema: Schema<T>,
-  name: string,
+  modelName: string,
   connection: RedisClientType | undefined,
 ): RediModel<T> {
   function Redi(this: IRediModel<T>, arg: Infer<Schema<T>>) {
     this[schemaKey] = schema;
     this[connectionKey] = connection;
     this[objectKeys] = Object.keys(arg) as [keyof Infer<Schema<T>>];
-    this[entityIDPrefixKey] = `rs:$entity$:${name}:`;
+    this[entityIDPrefixKey] = `rs:$entity$:${modelName}:`;
     for (let key in arg) {
       const k = key as keyof Infer<Schema<T>>;
       this[k] = arg[key] as any;
@@ -121,14 +130,17 @@ export function rediBuilder<T extends ObjectShape>(
           Effect.fail(new ModelError("Redis client is undefined")),
         );
       const { script, inputs } = luaEntityCreate(
-        [`rs:$entity$:$counter$:${name}`, `rs:$entity$:${name}:`],
+        [
+          `rs:$entity$:$counter$:${modelName}`,
+          `rs:$entity$:${modelName}:`,
+          "rs:$entity$:$ID$",
+        ],
         [this.toJSON()],
       );
-      const modelEffect = (_arrReply: Array<unknown>) => {
+      const modelEffect = (reply: ZInfer<typeof saveLuaReply>) => {
         const stediInstance = stediBuilder(
           this.toObject(),
-          // TODO needs to be returned ID
-          "1",
+          reply.id,
           this[entityIDPrefixKey],
           this[schemaKey],
           this[connectionKey],
@@ -138,7 +150,7 @@ export function rediBuilder<T extends ObjectShape>(
 
       const effects = pipe(
         persist(this[connectionKey], script, inputs),
-        Effect.map(HSETReply),
+        Effect.flatMap(validateSaveReply),
         Effect.flatMap(modelEffect),
       );
 
@@ -166,14 +178,15 @@ function persist(
 // LUA
 
 function luaEntityCreate(
-  keys: [EntityCounterPrefix, EntityIDPrefix],
+  keys: [EntityCounterPrefix, EntityKeyPrefix, EntityIDFieldPrefix],
   argv: Array<any>,
 ) {
   return {
     script: `
         local insert = table.insert
         local counterID = KEYS[1]
-        local entityIDPrefix = KEYS[2]
+        local entityKeyPrefix = KEYS[2]
+        local entityIDFieldPrefix = KEYS[3]
         local decodedObj = cjson.decode(ARGV[1])
 
         --[[
@@ -193,12 +206,14 @@ function luaEntityCreate(
         --]]
 
         local builtArgs = ${HSETPrepare(
-          "entityIDPrefix .. incrID",
+          "entityKeyPrefix",
+          "entityIDFieldPrefix",
+          "incrID",
           "decodedObj",
         )}
         local response = redis.pcall(unpack(builtArgs))
 
-        ${LogEncode("KEYS")}
+        ${LogEncode("builtArgs")}
 
         local ret = {response = response, id = incrID}
 
@@ -217,7 +232,13 @@ export class ModelError extends Error {
 }
 
 // UTILS
-function HSETReply(a: unknown): Array<unknown> {
-  if (Array.isArray(a)) return a;
-  return [a];
+function validateSaveReply(obj: unknown) {
+  return Effect.try({
+    try: () => {
+      return pipe(ZString().parse(obj), JSON.parse, (a) =>
+        saveLuaReply.parse(a),
+      );
+    },
+    catch: (caught) => new ModelError(caught),
+  });
 }
