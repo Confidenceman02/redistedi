@@ -3,6 +3,7 @@ import { RedisClientType } from "redis";
 import { Exit } from "@effect/io/Exit";
 import * as Effect from "@effect/io/Effect";
 import { pipe } from "@effect/data/Function";
+import { HSETFunc, HSETPrepare, LogEncode } from "./lua";
 
 const schemaKey = Symbol("schemaKey");
 const connectionKey = Symbol("connectionKey");
@@ -14,10 +15,16 @@ type IdxPrefix = "rs:$entity$:";
 type EntityCounterPrefix = `${IdxPrefix}$counter$:${string}`;
 type EntityIDPrefix = `${IdxPrefix}${string}:`;
 
+interface EvalOptions {
+  keys?: Array<string>;
+  arguments?: Array<string>;
+}
+
 export type StediModel<T extends ObjectShape> = Infer<Schema<T>> & {
   toObject(): StediObject<T>;
   toJSON(): string;
   [ModelID]: string;
+  [entityIDPrefixKey]: EntityIDPrefix;
   [schemaKey]: Schema<T>;
   [connectionKey]: RedisClientType | undefined;
   [objectKeys]: [keyof Infer<Schema<T>>];
@@ -48,11 +55,13 @@ export type StediObject<T extends ObjectShape> = Infer<Schema<T>> & {
 export function stediBuilder<T extends ObjectShape>(
   obj: Infer<Schema<T>>,
   id: string,
+  entityIdPrefix: EntityIDPrefix,
   schema: Schema<T>,
   connection: RedisClientType | undefined,
 ): StediModelBuilder<T> {
   function Stedi(this: StediModel<T>) {
     this[ModelID] = id;
+    this[entityIDPrefixKey] = entityIdPrefix;
     this[schemaKey] = schema;
     this[connectionKey] = connection;
     this[objectKeys] = Object.keys(obj) as [keyof Infer<Schema<T>>];
@@ -60,6 +69,17 @@ export function stediBuilder<T extends ObjectShape>(
       const k = key as keyof Infer<Schema<T>>;
       this[k] = obj[key] as any;
     }
+
+    this.toObject = function () {
+      let obj = this[objectKeys].reduce(
+        (acc, key) => {
+          acc[key] = this[key];
+          return acc;
+        },
+        {} as Infer<Schema<T>>,
+      );
+      return Object.assign(obj, { [ModelID]: this[ModelID] });
+    };
   }
 
   return Stedi as any as StediModelBuilder<T>;
@@ -96,48 +116,51 @@ export function rediBuilder<T extends ObjectShape>(
     };
 
     this.save = async function () {
-      const stediInstance = stediBuilder(
-        this.toObject(),
-        this[entityIDPrefixKey],
-        this[schemaKey],
-        this[connectionKey],
-      );
+      if (!this[connectionKey])
+        return Effect.runSyncExit(
+          Effect.fail(new ModelError("Redis client is undefined")),
+        );
       const { script, inputs } = luaEntityCreate(
         [`rs:$entity$:$counter$:${name}`, `rs:$entity$:${name}:`],
         [this.toJSON()],
       );
+      const modelEffect = (_arrReply: Array<unknown>) => {
+        const stediInstance = stediBuilder(
+          this.toObject(),
+          // TODO needs to be returned ID
+          "1",
+          this[entityIDPrefixKey],
+          this[schemaKey],
+          this[connectionKey],
+        );
+        return Effect.succeed(new stediInstance());
+      };
 
-      const persist = Effect.tryPromise<unknown, ModelError>({
-        try: () => {
-          if (!this[connectionKey])
-            throw new ModelError("RedisClientType is undefined");
-          return this[connectionKey].EVAL(script, inputs);
-        },
-        catch: (unknown) => new ModelError(unknown),
-      });
-
-      const mappedPersisted = pipe(
-        persist,
-        Effect.map(arrayReply),
-        Effect.map(console.log),
+      const effects = pipe(
+        persist(this[connectionKey], script, inputs),
+        Effect.map(HSETReply),
+        Effect.flatMap(modelEffect),
       );
 
-      await Effect.runPromise(mappedPersisted);
-
-      const ret = Effect.tryPromise<StediModel<T>, ModelError>({
-        try: () => {
-          if (!this[connectionKey])
-            throw new ModelError("RedisClientType is undefined");
-          return new Promise((resolve) => resolve(new stediInstance()));
-        },
-        catch: (unknown) => new ModelError(unknown),
-      });
-
-      return await Effect.runPromiseExit(ret);
+      return await Effect.runPromiseExit(effects);
     };
   }
 
   return Redi as any as RediModel<T>;
+}
+
+// SAVE
+function persist(
+  client: RedisClientType,
+  script: string,
+  options: EvalOptions,
+) {
+  return Effect.tryPromise<unknown, ModelError>({
+    try: () => {
+      return client.EVAL(script, options);
+    },
+    catch: (unknown) => new ModelError(unknown),
+  });
 }
 
 // LUA
@@ -163,47 +186,27 @@ function luaEntityCreate(
           2 - Prepare HSET args
         --]]
 
-        ${luaHSET.func}
+        ${HSETFunc()}
 
         --[[
           3 - Persist
         --]]
 
-        local builtArgs = ${luaHSET.prepare(
+        local builtArgs = ${HSETPrepare(
           "entityIDPrefix .. incrID",
           "decodedObj",
         )}
-        local ret = redis.pcall(unpack(builtArgs))
+        local response = redis.pcall(unpack(builtArgs))
 
-        ${luaLogEncode("KEYS")}
+        ${LogEncode("KEYS")}
 
-        return ret
+        local ret = {response = response, id = incrID}
+
+        return cjson.encode(ret)
     `,
     inputs: { keys, arguments: argv },
   };
 }
-
-function luaLogEncode(name: string) {
-  return `
-     redis.log(redis.LOG_WARNING, cjson.encode(${name}))
-  `;
-}
-
-const luaHSET = {
-  func: `
-        local function buildCommand(id, T)
-          local values = {"HSET", id}
-          for k,v in pairs(T) do 
-            insert(values, k)
-            insert(values, v)
-          end
-          return values
-        end
-    `,
-  prepare: (id: string, refString: string) => {
-    return `buildCommand("${id}",${refString})`;
-  },
-};
 
 export class ModelError extends Error {
   readonly _tag: string = "ModelError";
@@ -214,7 +217,7 @@ export class ModelError extends Error {
 }
 
 // UTILS
-function arrayReply(a: unknown): Array<unknown> {
+function HSETReply(a: unknown): Array<unknown> {
   if (Array.isArray(a)) return a;
   return [a];
 }
