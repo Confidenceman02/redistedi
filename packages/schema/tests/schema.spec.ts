@@ -15,6 +15,7 @@ import {
   EnumType as ZEnumType,
   NullableType as ZNullableType,
   ArrayType as ZArrayType,
+  UnionType as ZUnionType,
 } from "@redistedi/zod";
 
 describe("primitives", () => {
@@ -24,7 +25,7 @@ describe("primitives", () => {
     assert.instanceOf(SUT, StringType);
   });
   it("is a StringType zod instance", () => {
-    const SUT = new StringType().zodShapeEgress();
+    const SUT = new StringType().zodShape();
 
     assert.instanceOf(SUT, ZStringType);
   });
@@ -34,7 +35,7 @@ describe("primitives", () => {
     assert.instanceOf(SUT, NumberType);
   });
   it("is a NumberType zod instance", () => {
-    const SUT = new NumberType().zodShapeEgress();
+    const SUT = new NumberType().zodShape();
 
     assert.instanceOf(SUT, ZNumberType);
   });
@@ -44,7 +45,7 @@ describe("primitives", () => {
     assert.instanceOf(SUT, BooleanType);
   });
   it("is a BooleanType zod instance", () => {
-    const SUT = new BooleanType().zodShapeEgress();
+    const SUT = new BooleanType().zodShape();
 
     assert.instanceOf(SUT, ZBooleanType);
   });
@@ -64,7 +65,7 @@ describe("primitives", () => {
       There,
     }
 
-    const SUT = new EnumType(SomeEnum).zodShapeEgress();
+    const SUT = new EnumType(SomeEnum).zodShape();
 
     assert.instanceOf(SUT, ZEnumType);
   });
@@ -84,31 +85,61 @@ describe("primitives", () => {
       There,
     }
 
-    const SUT = new NullableType(new EnumType(SomeEnum)).zodShapeEgress();
+    const SUT = new NullableType(new EnumType(SomeEnum)).zodShape();
 
     assert.instanceOf(SUT, ZNullableType);
   });
   it("is a ArrayType instance", () => {
-    enum SomeEnum {
-      Hi,
-      There,
-    }
-
-    const SUT = new ArrayType(new EnumType(SomeEnum));
+    const SUT = new ArrayType(new StringType());
 
     assert.instanceOf(SUT, ArrayType);
   });
   it("is a ArrayType zod instance", () => {
-    enum SomeEnum {
-      Hi,
-      There,
-    }
-
-    const SUT = new ArrayType(new EnumType(SomeEnum)).zodShapeEgress();
+    const SUT = new ArrayType(new StringType()).zodShape();
 
     assert.instanceOf(SUT, ZArrayType);
   });
 });
+
+describe("ingressShape", () => {
+  it("StringType returns ZStringType", () => {
+    const SUT = new StringType();
+
+    assert.instanceOf(SUT.ingressShape(), ZStringType);
+  });
+  it("NullableType with StringType returns ZStringType", () => {
+    const SUT = new NullableType(new StringType());
+
+    assert.instanceOf(SUT.ingressShape(), ZStringType);
+  });
+  it("NullableType with NumberType returns ZUnionType", () => {
+    const SUT = new NullableType(new NumberType());
+
+    assert.instanceOf(SUT.ingressShape(), ZUnionType);
+  });
+  it("NullableType with EnumType returns ZUnionType", () => {
+    enum SomeEnum {
+      Hi,
+      There,
+    }
+    const SUT = new NullableType(new EnumType(SomeEnum));
+
+    assert.instanceOf(SUT.ingressShape(), ZUnionType);
+  });
+  it("NullableType with ArrayType returns ZUnionType", () => {
+    const SUT = new NullableType(new ArrayType(new StringType()));
+
+    assert.instanceOf(SUT.ingressShape(), ZUnionType);
+  });
+  it("NullableType with NullableType<StringType> returns ZStringType", () => {
+    const SUT = new NullableType(new NullableType(new StringType()));
+
+    assert.instanceOf(SUT.ingressShape(), ZStringType);
+  });
+  // TODO test all NullableType nested cases
+});
+
+describe.skip("ingressShape.parse", () => {});
 
 describe("Schema", () => {
   it("is a Schema instance", () => {

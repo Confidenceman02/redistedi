@@ -4,7 +4,9 @@ import {
   BooleanType,
   EnumType,
   ArrayType,
-  AnyType,
+  BoolPrimitiveFalse,
+  BoolPrimitiveTrue,
+  ArrayConstrainedTypes,
 } from "./schema";
 
 export {
@@ -13,6 +15,8 @@ export {
   ObjectShape,
   Infer,
   ExtractObjectShape,
+  BoolPrimitiveTrue,
+  BoolPrimitiveFalse,
 } from "./schema";
 
 export function string() {
@@ -27,7 +31,7 @@ export function boolean() {
 function enumValue<T>(e: T) {
   return new EnumType(e);
 }
-export function array<T extends AnyType>(schema: T) {
+export function array<T extends ArrayConstrainedTypes>(schema: T) {
   return new ArrayType(schema);
 }
 export default {

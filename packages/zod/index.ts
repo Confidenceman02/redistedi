@@ -46,6 +46,7 @@ export {
   AnyType,
   ObjectShape,
   // Types
+  LiteralType,
   EnumType,
   NumberType,
   BooleanType,

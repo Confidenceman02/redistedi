@@ -1,5 +1,12 @@
 import { assert, expect } from "chai";
-import { Schema, string } from "@redistedi/schema";
+import {
+  Schema,
+  string,
+  number,
+  boolean,
+  BoolPrimitiveFalse,
+  BoolPrimitiveTrue,
+} from "@redistedi/schema";
 import { ModelID, rediBuilder } from "..";
 import { RedisClientType, createClient } from "redis";
 
@@ -119,5 +126,34 @@ describe("RediModel.save", () => {
     const SUT = await client.HGETALL("rs:$entity$:someModelName:1");
 
     assert.deepEqual(SUT, { "rs:$entity$:$ID$": "1", hello: "world" });
+  });
+
+  it("persists model with NumberType", async () => {
+    const obj = { position: number() };
+    const schema = new Schema(obj);
+    const builder = rediBuilder(schema, "modelName", client);
+
+    const obj1 = new builder({ position: 2 });
+    await obj1.save();
+
+    const SUT = await client.HGETALL("rs:$entity$:modelName:1");
+
+    assert.deepEqual(SUT, { "rs:$entity$:$ID$": "1", position: "2" });
+  });
+
+  it.skip("persists model with BooleanType", async () => {
+    const obj = { position: boolean() };
+    const schema = new Schema(obj);
+    const builder = rediBuilder(schema, "modelName", client);
+
+    const obj1 = new builder({ position: true });
+    await obj1.save();
+
+    const SUT = await client.HGETALL("rs:$entity$:modelName:1");
+
+    assert.deepEqual(SUT, {
+      "rs:$entity$:$ID$": "1",
+      position: BoolPrimitiveTrue,
+    });
   });
 });

@@ -7,10 +7,13 @@ import {
   enum as ZEnum,
   array as ZArray,
   NullableType as ZNullableType,
+  StringType as ZStringType,
+  NumberType as ZNumberType,
+  EnumType as ZEnumType,
   object as ZObject,
   Infer as ZInfer,
 } from "@redistedi/zod";
-import { InferObjectShape } from "@redistedi/zod/types";
+import { InferObjectShape, MappedType } from "@redistedi/zod/types";
 
 function clone<T>(value: T): T {
   if (typeof value !== "object" || value === null) {
@@ -30,14 +33,25 @@ function clone<T>(value: T): T {
   return cpy;
 }
 
-const zodShapeEgress = Symbol("zodShapeEgress");
+type NullPrimitiveType = "rs:$entity$:$primitive$:null";
+type BoolPrimitiveType = `rs:$entity$:$primitive$:$bool$:${boolean}`;
+type ArrayPrimitivePrefixRefType = `rs:$entity$:$primitive$:$array$:`;
+const ArrayPrimitivePrefixRef: ArrayPrimitivePrefixRefType =
+  "rs:$entity$:$primitive$:$array$:";
+const NullPrimitive: NullPrimitiveType = "rs:$entity$:$primitive$:null";
+export const BoolPrimitiveTrue: BoolPrimitiveType =
+  "rs:$entity$:$primitive$:$bool$:true";
+export const BoolPrimitiveFalse: BoolPrimitiveType =
+  "rs:$entity$:$primitive$:$bool$:false";
+
+const zodShape = Symbol("zodShape");
 
 export type ExtractObjectShape<T> = T extends Schema<infer S> ? S : never;
 
 type ExtractZodObjectType<T> = {
   [key in keyof T]: T[key] extends AnyType
     ? T[key] extends Type<infer Z>
-      ? ReturnType<Type<Z>["zodShapeEgress"]>
+      ? ReturnType<Type<Z>["zodShape"]>
       : never
     : never;
 };
@@ -60,9 +74,9 @@ type InternalInfer<T> = T extends AnyType
   : T;
 
 abstract class Type<T> {
-  private [zodShapeEgress]: ZType<T>;
-  constructor(zShapeEgress: ZAnyType) {
-    this[zodShapeEgress] = zShapeEgress;
+  private [zodShape]: ZType<T>;
+  constructor(zShape: ZAnyType) {
+    this[zodShape] = zShape;
   }
   nullable(): NullableType<this>;
   nullable(): any {
@@ -71,23 +85,40 @@ abstract class Type<T> {
     }
     return new NullableType(this);
   }
-  zodShapeEgress(): ZType<T>;
-  zodShapeEgress(): ZType<T> {
-    return this[zodShapeEgress];
+  zodShape(): ZType<T>;
+  zodShape(): ZType<T> {
+    return this[zodShape];
   }
 }
 
 export class NullableType<
   T extends AnyType,
 > extends Type<InternalInfer<T> | null> {
-  constructor(readonly schema: T) {
+  constructor(private readonly schema: T) {
     let arg: ZType<ZAnyType>;
-    if (schema.zodShapeEgress() instanceof ZNullableType) {
-      arg = schema.zodShapeEgress();
+    if (schema.zodShape() instanceof ZNullableType) {
+      arg = schema.zodShape();
     } else {
-      arg = new ZNullableType(schema.zodShapeEgress());
+      arg = new ZNullableType(schema.zodShape());
     }
     super(arg);
+  }
+
+  ingressShape(): ZAnyType {
+    if (this.schema instanceof StringType)
+      return this.schema.ingressShape().default(NullPrimitive);
+    if (this.schema instanceof NumberType)
+      return this.schema.ingressShape().or(ZString().default(NullPrimitive));
+    if (this.schema instanceof BooleanType)
+      return this.schema.ingressShape().or(ZString().default(NullPrimitive));
+    if (this.schema instanceof EnumType)
+      return this.schema.ingressShape().or(ZString().default(NullPrimitive));
+    if (this.schema instanceof ArrayType)
+      return this.schema.ingressShape().or(ZString().default(NullPrimitive));
+
+    const newShape = this.schema as any as NullableType<AnyType>;
+
+    return new NullableType(newShape.schema).ingressShape();
   }
 }
 
@@ -95,11 +126,17 @@ export class StringType extends Type<string> {
   constructor() {
     super(ZString());
   }
+  ingressShape(): ZStringType {
+    return ZString();
+  }
 }
 
 export class NumberType extends Type<number> {
   constructor() {
     super(ZNumber());
+  }
+  ingressShape(): ZNumberType {
+    return ZNumber();
   }
 }
 
@@ -107,35 +144,51 @@ export class BooleanType extends Type<boolean> {
   constructor() {
     super(ZBoolean());
   }
-}
-
-export class EnumType<T> extends Type<ValueOf<T>> {
-  constructor(enumeration: T) {
-    super(ZEnum(enumeration));
+  ingressShape(): MappedType<string> {
+    return ZBoolean().map((pred) => {
+      if (pred) return BoolPrimitiveTrue as string;
+      return BoolPrimitiveFalse;
+    });
   }
 }
 
-export class ArrayType<T extends AnyType> extends Type<InternalInfer<T>[]> {
+export class EnumType<T> extends Type<ValueOf<T>> {
+  constructor(private readonly enumeration: T) {
+    super(ZEnum(enumeration));
+  }
+  ingressShape(): ZEnumType<T> {
+    return ZEnum(this.enumeration);
+  }
+}
+
+export type ArrayConstrainedTypes = StringType;
+
+export class ArrayType<T extends ArrayConstrainedTypes> extends Type<
+  InternalInfer<T>[]
+> {
   constructor(readonly schema: T) {
-    super(ZArray(schema.zodShapeEgress()));
+    super(ZArray(schema.zodShape()));
+  }
+  ingressShape(): MappedType<string> {
+    return this.zodShape().map(() => ArrayPrimitivePrefixRef as string);
   }
 }
 
 export class Schema<T extends ObjectShape> {
-  private [zodShapeEgress]: ZType<InferObjectShape<ExtractZodObjectType<T>>>;
+  private [zodShape]: ZType<InferObjectShape<ExtractZodObjectType<T>>>;
   constructor(readonly objectShape: T) {
     const obj: ExtractZodObjectType<T> = Object.keys(objectShape).reduce(
       (acc, key) => {
-        acc[key] = objectShape[key].zodShapeEgress();
+        acc[key] = objectShape[key].zodShape();
         return acc;
       },
       {} as any,
     );
 
-    this[zodShapeEgress] = ZObject(obj);
+    this[zodShape] = ZObject(obj);
   }
 
   parse(value: unknown): Infer<Schema<T>> {
-    return this[zodShapeEgress].parse(value);
+    return this[zodShape].parse(value);
   }
 }
