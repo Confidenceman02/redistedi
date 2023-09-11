@@ -92,7 +92,7 @@ abstract class Type<T> {
 }
 
 export class NullableType<
-  T extends AnyType,
+  T extends AnyType
 > extends Type<InternalInfer<T> | null> {
   constructor(private readonly schema: T) {
     let arg: ZType<ZAnyType>;
@@ -111,13 +111,31 @@ export class NullableType<
         return NullPrimitive;
       });
     if (this.schema instanceof NumberType)
-      return this.schema.ingressShape().or(ZString().default(NullPrimitive));
-    if (this.schema instanceof BooleanType)
-      return this.schema.ingressShape().or(ZString().default(NullPrimitive));
-    if (this.schema instanceof EnumType)
-      return this.schema.ingressShape().or(ZString().default(NullPrimitive));
-    if (this.schema instanceof ArrayType)
-      return this.schema.ingressShape().or(ZString().default(NullPrimitive));
+      return this.zodShape().map((val) => {
+        if (val !== null) return val;
+        return NullPrimitive;
+      });
+    if (this.schema instanceof BooleanType) {
+      const s = this.schema;
+      return this.zodShape().map((val) => {
+        if (val !== null) return s.ingressShape().parse(val);
+        return NullPrimitive;
+      });
+    }
+    if (this.schema instanceof EnumType) {
+      const s = this.schema;
+      return this.zodShape().map((val) => {
+        if (val !== null) return s.ingressShape().parse(val);
+        return NullPrimitive;
+      });
+    }
+    if (this.schema instanceof ArrayType) {
+      const s = this.schema;
+      return this.zodShape().map((val) => {
+        if (val !== null) return s.ingressShape().parse(val);
+        return NullPrimitive;
+      });
+    }
 
     const newShape = this.schema as any as NullableType<AnyType>;
 
@@ -185,7 +203,7 @@ export class Schema<T extends ObjectShape> {
         acc[key] = objectShape[key].zodShape();
         return acc;
       },
-      {} as any,
+      {} as any
     );
 
     this[zodShape] = ZObject(obj);
