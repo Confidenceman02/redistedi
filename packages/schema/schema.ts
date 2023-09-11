@@ -36,9 +36,9 @@ function clone<T>(value: T): T {
 type NullPrimitiveType = "rs:$entity$:$primitive$:null";
 type BoolPrimitiveType = `rs:$entity$:$primitive$:$bool$:${boolean}`;
 type ArrayPrimitivePrefixRefType = `rs:$entity$:$primitive$:$array$:`;
-const ArrayPrimitivePrefixRef: ArrayPrimitivePrefixRefType =
+export const ArrayPrimitivePrefixRef: ArrayPrimitivePrefixRefType =
   "rs:$entity$:$primitive$:$array$:";
-const NullPrimitive: NullPrimitiveType = "rs:$entity$:$primitive$:null";
+export const NullPrimitive: NullPrimitiveType = "rs:$entity$:$primitive$:null";
 export const BoolPrimitiveTrue: BoolPrimitiveType =
   "rs:$entity$:$primitive$:$bool$:true";
 export const BoolPrimitiveFalse: BoolPrimitiveType =
@@ -106,7 +106,10 @@ export class NullableType<
 
   ingressShape(): ZAnyType {
     if (this.schema instanceof StringType)
-      return this.schema.ingressShape().default(NullPrimitive);
+      return this.zodShape().map((val) => {
+        if (val !== null) return val;
+        return NullPrimitive;
+      });
     if (this.schema instanceof NumberType)
       return this.schema.ingressShape().or(ZString().default(NullPrimitive));
     if (this.schema instanceof BooleanType)

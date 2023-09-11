@@ -91,7 +91,7 @@ export type MappedType<T> = Type<T> & {
   default: (value: T | (() => T)) => Type<T> & MappedType<T>;
 };
 
-class MTypeClass<T extends AnyType, K>
+export class MTypeClass<T extends AnyType, K>
   extends Type<K>
   implements WithPredicate<K>, Defaultable<K>
 {

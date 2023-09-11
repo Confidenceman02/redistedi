@@ -4,7 +4,6 @@ import {
   string,
   number,
   boolean,
-  BoolPrimitiveFalse,
   BoolPrimitiveTrue,
 } from "@redistedi/schema";
 import { ModelID, rediBuilder } from "..";

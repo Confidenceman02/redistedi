@@ -7,6 +7,10 @@ import {
   EnumType,
   NullableType,
   ArrayType,
+  BoolPrimitiveTrue,
+  BoolPrimitiveFalse,
+  ArrayPrimitivePrefixRef,
+  NullPrimitive,
 } from "../schema";
 import {
   StringType as ZStringType,
@@ -16,6 +20,7 @@ import {
   NullableType as ZNullableType,
   ArrayType as ZArrayType,
   UnionType as ZUnionType,
+  MTypeClass as ZMTypeClass,
 } from "@redistedi/zod";
 
 describe("primitives", () => {
@@ -107,13 +112,23 @@ describe("ingressShape", () => {
 
     assert.instanceOf(SUT.ingressShape(), ZStringType);
   });
-  it("NullableType with StringType returns ZStringType", () => {
+  it("BooleanType returns ZMTypeClass", () => {
+    const SUT = new BooleanType();
+
+    assert.instanceOf(SUT.ingressShape(), ZMTypeClass);
+  });
+  it("NullableType with StringType returns ZMTypeClass", () => {
     const SUT = new NullableType(new StringType());
 
-    assert.instanceOf(SUT.ingressShape(), ZStringType);
+    assert.instanceOf(SUT.ingressShape(), ZMTypeClass);
   });
   it("NullableType with NumberType returns ZUnionType", () => {
     const SUT = new NullableType(new NumberType());
+
+    assert.instanceOf(SUT.ingressShape(), ZUnionType);
+  });
+  it("NullableType with BooleanType returns ZUnionType", () => {
+    const SUT = new NullableType(new BooleanType());
 
     assert.instanceOf(SUT.ingressShape(), ZUnionType);
   });
@@ -131,17 +146,93 @@ describe("ingressShape", () => {
 
     assert.instanceOf(SUT.ingressShape(), ZUnionType);
   });
-  it("NullableType with NullableType<StringType> returns ZStringType", () => {
+  it("NullableType with NullableType<StringType> returns ZMTypeClass", () => {
     const SUT = new NullableType(new NullableType(new StringType()));
 
-    assert.instanceOf(SUT.ingressShape(), ZStringType);
+    assert.instanceOf(SUT.ingressShape(), ZMTypeClass);
   });
-  // TODO test all NullableType nested cases
+  it("NullableType with NullableType<NumberType> returns ZUnionType", () => {
+    const SUT = new NullableType(new NullableType(new NumberType()));
+
+    assert.instanceOf(SUT.ingressShape(), ZUnionType);
+  });
+  it("NullableType with NullableType<EnumType> returns ZUnionType", () => {
+    enum SomeEnum {
+      Hi,
+      There,
+    }
+    const SUT = new NullableType(new NullableType(new EnumType(SomeEnum)));
+
+    assert.instanceOf(SUT.ingressShape(), ZUnionType);
+  });
+  it("NullableType with NullableType<Boolean> returns ZUnionType", () => {
+    enum SomeEnum {
+      Hi,
+      There,
+    }
+    const SUT = new NullableType(new NullableType(new EnumType(SomeEnum)));
+
+    assert.instanceOf(SUT.ingressShape(), ZUnionType);
+  });
 });
 
-describe.skip("ingressShape.parse", () => {});
+describe("ingressParse", () => {
+  it("StringType returns parsed string", () => {
+    const SUT = new StringType();
 
-describe("Schema", () => {
+    assert.equal(SUT.ingressShape().parse("hello"), "hello");
+  });
+  it("NumberType returns parsed number", () => {
+    const SUT = new NumberType();
+
+    assert.equal(SUT.ingressShape().parse(42), 42);
+  });
+  it("BooleanType returns internal boolean primitive", () => {
+    const SUT = new BooleanType();
+
+    assert.equal(SUT.ingressShape().parse(true), BoolPrimitiveTrue);
+    assert.equal(SUT.ingressShape().parse(false), BoolPrimitiveFalse);
+  });
+  it("indexed EnumType returns parsed number", () => {
+    enum SomeEnum {
+      Hi,
+      There,
+    }
+    const SUT = new EnumType(SomeEnum);
+
+    assert.equal(SUT.ingressShape().parse(SomeEnum.Hi), 0);
+  });
+  it("named EnumType returns parsed string", () => {
+    enum SomeEnum {
+      Hi = "hi",
+      There = "there",
+    }
+    const SUT = new EnumType(SomeEnum);
+
+    assert.equal(SUT.ingressShape().parse(SomeEnum.Hi), "hi");
+  });
+  it("ArrayType returns internal array prefix reference", () => {
+    const SUT = new ArrayType(new StringType());
+
+    assert.equal(
+      SUT.ingressShape().parse(["hello", "world"]),
+      ArrayPrimitivePrefixRef,
+    );
+  });
+  it("NullableType with StringType returns internal null primitive when null", () => {
+    const SUT = new NullableType(new StringType());
+
+    assert.equal(SUT.ingressShape().parse(null), NullPrimitive);
+  });
+  it("NullableType with StringType returns parsed string", () => {
+    const SUT = new NullableType(new StringType());
+
+    assert.equal(SUT.ingressShape().parse("Hello World"), "Hello World");
+  });
+  // TODO other nullables
+});
+
+describe("Schema.parse", () => {
   it("is a Schema instance", () => {
     const SUT = new Schema({});
     assert.instanceOf(SUT, Schema);

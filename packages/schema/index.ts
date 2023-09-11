@@ -6,7 +6,9 @@ import {
   ArrayType,
   BoolPrimitiveFalse,
   BoolPrimitiveTrue,
+  ArrayPrimitivePrefixRef,
   ArrayConstrainedTypes,
+  NullPrimitive,
 } from "./schema";
 
 export {
@@ -17,6 +19,8 @@ export {
   ExtractObjectShape,
   BoolPrimitiveTrue,
   BoolPrimitiveFalse,
+  ArrayPrimitivePrefixRef,
+  NullPrimitive,
 } from "./schema";
 
 export function string() {

@@ -37,6 +37,7 @@ import {
   BigIntType,
   StringOptions,
   EnumOptions,
+  MTypeClass,
 } from "./types";
 
 export {
@@ -59,6 +60,7 @@ export {
   NullableType,
   OptionalType,
   MappedType,
+  MTypeClass,
   DateType,
   UnknownType,
   UnionType,
