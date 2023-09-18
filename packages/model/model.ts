@@ -20,8 +20,8 @@ export const ModelID = Symbol("ModelId");
 const saveLuaReply = ZObject({ response: ZNumber(), id: ZNumber() });
 
 type IdxPrefix = "rs:$entity$:";
-type EntityCounterPrefix = `${IdxPrefix}$counter$:${string}`;
-type EntityKeyPrefix = `${IdxPrefix}${string}:`;
+type EntityCounterPrefix = `{${IdxPrefix}$counter$:${string}}`;
+type EntityKeyPrefix = `{${IdxPrefix}${string}}:`;
 type EntityIDFieldPrefix = `${IdxPrefix}$ID$`;
 
 interface EvalOptions {
@@ -103,7 +103,7 @@ export function rediBuilder<T extends ObjectShape>(
     this[schemaKey] = schema;
     this[connectionKey] = connection;
     this[objectKeys] = Object.keys(arg) as [keyof Infer<Schema<T>>];
-    this[entityIDPrefixKey] = `rs:$entity$:${modelName}:`;
+    this[entityIDPrefixKey] = `{rs:$entity$:${modelName}}:`;
     for (let key in arg) {
       const k = key as keyof Infer<Schema<T>>;
       this[k] = arg[key] as any;
@@ -131,8 +131,8 @@ export function rediBuilder<T extends ObjectShape>(
         );
       const { script, inputs } = luaEntityCreate(
         [
-          `rs:$entity$:$counter$:${modelName}`,
-          `rs:$entity$:${modelName}:`,
+          `{rs:$entity$:$counter$:${modelName}}`,
+          `{rs:$entity$:${modelName}}:`,
           "rs:$entity$:$ID$",
         ],
         [this.toJSON()],

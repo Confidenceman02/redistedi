@@ -122,7 +122,7 @@ describe("RediModel.save", () => {
     const obj1 = new builder({ hello: "world" });
     await obj1.save();
 
-    const SUT = await client.HGETALL("rs:$entity$:someModelName:1");
+    const SUT = await client.HGETALL("{rs:$entity$:someModelName}:1");
 
     assert.deepEqual(SUT, { "rs:$entity$:$ID$": "1", hello: "world" });
   });
@@ -135,7 +135,7 @@ describe("RediModel.save", () => {
     const obj1 = new builder({ position: 2 });
     await obj1.save();
 
-    const SUT = await client.HGETALL("rs:$entity$:modelName:1");
+    const SUT = await client.HGETALL("{rs:$entity$:modelName}:1");
 
     assert.deepEqual(SUT, { "rs:$entity$:$ID$": "1", position: "2" });
   });
@@ -148,7 +148,7 @@ describe("RediModel.save", () => {
     const obj1 = new builder({ position: true });
     await obj1.save();
 
-    const SUT = await client.HGETALL("rs:$entity$:modelName:1");
+    const SUT = await client.HGETALL("{rs:$entity$:modelName}:1");
 
     assert.deepEqual(SUT, {
       "rs:$entity$:$ID$": "1",
