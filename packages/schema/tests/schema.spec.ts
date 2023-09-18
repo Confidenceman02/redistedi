@@ -215,7 +215,7 @@ describe("ingressParse", () => {
 
     assert.equal(
       SUT.ingressShape().parse(["hello", "world"]),
-      ArrayPrimitivePrefixRef
+      ArrayPrimitivePrefixRef,
     );
   });
   it("NullableType with StringType returns internal null primitive when null", () => {
@@ -249,7 +249,7 @@ describe("ingressParse", () => {
 
     assert.equal(
       SUT.ingressShape().parse(["Hello", "World"]),
-      ArrayPrimitivePrefixRef
+      ArrayPrimitivePrefixRef,
     );
   });
   it("NullableType with ArrayType returns error", () => {
@@ -390,5 +390,66 @@ describe("Schema.parse", () => {
     const result1 = SUT.parse({ hello: ["world"] });
 
     assert.deepEqual(result1, { hello: ["world"] });
+  });
+});
+
+describe("Schema.parseIngress", () => {
+  it("errors when invalid shape is parsed", () => {
+    const obj = { hello: new StringType() };
+
+    const SUT = new Schema(obj);
+
+    try {
+      SUT.parseIngress({});
+    } catch (err) {
+      assert.instanceOf(err, Error);
+    }
+  });
+  it("validates an object with StringType", () => {
+    const obj = { hello: new StringType() };
+
+    const SUT = new Schema(obj);
+
+    const result = SUT.parseIngress({ hello: "world" });
+
+    assert.deepEqual(result, { hello: "world" });
+  });
+  it("validates an object with NumberType", () => {
+    const obj = { hello: new NumberType() };
+
+    const SUT = new Schema(obj);
+
+    const result = SUT.parseIngress({ hello: 1234 });
+
+    assert.deepEqual(result, { hello: 1234 });
+  });
+  it("validates an object with BooleanType", () => {
+    const obj = { hello: new BooleanType() };
+
+    const SUT = new Schema(obj);
+
+    const result = SUT.parseIngress({ hello: true });
+
+    assert.deepEqual(result, { hello: BoolPrimitiveTrue });
+  });
+  it("validates an object with NullableType<StringType>", () => {
+    const obj = { hello: new StringType().nullable() };
+
+    const SUT = new Schema(obj);
+
+    const result1 = SUT.parseIngress({ hello: null });
+    const result2 = SUT.parseIngress({ hello: "world" });
+
+    assert.deepEqual(result1, { hello: NullPrimitive });
+    assert.deepEqual(result2, { hello: "world" });
+  });
+  it("validates an object with ArrayType<StringType>", () => {
+    const obj = { hello: new ArrayType(new StringType()) };
+
+    const SUT = new Schema(obj);
+
+    const result1 = SUT.parseIngress({ hello: ["world"] });
+
+    assert.deepEqual(result1, { hello: ArrayPrimitivePrefixRef });
   });
 });

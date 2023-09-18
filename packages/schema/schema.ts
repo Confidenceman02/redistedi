@@ -45,6 +45,7 @@ export const BoolPrimitiveFalse: BoolPrimitiveType =
   "rs:$entity$:$primitive$:$bool$:false";
 
 const zodShape = Symbol("zodShape");
+const zodIngressObject = Symbol("zodIngressShape");
 
 export type ExtractObjectShape<T> = T extends Schema<infer S> ? S : never;
 
@@ -52,6 +53,13 @@ type ExtractZodObjectType<T> = {
   [key in keyof T]: T[key] extends AnyType
     ? T[key] extends Type<infer Z>
       ? ReturnType<Type<Z>["zodShape"]>
+      : never
+    : never;
+};
+type ExtractZodIngressObjectType<T> = {
+  [key in keyof T]: T[key] extends AnyType
+    ? T[key] extends Type<infer Z>
+      ? ReturnType<Type<Z>["ingressShape"]>
       : never
     : never;
 };
@@ -67,6 +75,10 @@ type ValueOf<T> = T[keyof T];
 export type Infer<T> = T extends Schema<infer Z>
   ? ZInfer<ZType<InferObjectShape<ExtractZodObjectType<Z>>>>
   : never;
+export type InferIngress<T> = T extends Schema<infer Z>
+  ? ZInfer<ZType<InferObjectShape<ExtractZodIngressObjectType<Z>>>>
+  : never;
+
 type InternalInfer<T> = T extends AnyType
   ? T extends Type<infer K>
     ? K
@@ -89,10 +101,12 @@ abstract class Type<T> {
   zodShape(): ZType<T> {
     return this[zodShape];
   }
+
+  abstract ingressShape(): ZAnyType;
 }
 
 export class NullableType<
-  T extends AnyType
+  T extends AnyType,
 > extends Type<InternalInfer<T> | null> {
   constructor(private readonly schema: T) {
     let arg: ZType<ZAnyType>;
@@ -197,19 +211,27 @@ export class ArrayType<T extends ArrayConstrainedTypes> extends Type<
 
 export class Schema<T extends ObjectShape> {
   private [zodShape]: ZType<InferObjectShape<ExtractZodObjectType<T>>>;
+  private [zodIngressObject]: ExtractZodIngressObjectType<T>;
   constructor(readonly objectShape: T) {
+    let ingress = {} as any;
     const obj: ExtractZodObjectType<T> = Object.keys(objectShape).reduce(
       (acc, key) => {
+        ingress[key] = objectShape[key].ingressShape();
         acc[key] = objectShape[key].zodShape();
         return acc;
       },
-      {} as any
+      {} as any,
     );
 
     this[zodShape] = ZObject(obj);
+    this[zodIngressObject] = ingress as ExtractZodIngressObjectType<T>;
   }
 
   parse(value: unknown): Infer<Schema<T>> {
     return this[zodShape].parse(value);
+  }
+
+  parseIngress(value: unknown): InferIngress<Schema<T>> {
+    return ZObject(this[zodIngressObject]).parse(value);
   }
 }

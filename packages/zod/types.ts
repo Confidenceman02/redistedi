@@ -81,8 +81,7 @@ export abstract class Type<T> {
   }
 }
 
-// TODO remove once we can get mapped types inferred properly or Predicate and
-// default funcs move to abstract class Type
+// TODO remove once we can get mapped types inferred properly or Predicate and default funcs move to abstract class Type
 export type MappedType<T> = Type<T> & {
   withPredicate: (
     fn: Predicate<T>["func"],
@@ -131,6 +130,35 @@ export class MTypeClass<T extends AnyType, K>
   }
 }
 
+function flattenCollectedErrorsTreeIntoMessages(
+  collectedErrors: Record<string, ValidationError | undefined>,
+  path: (string | number)[] = [],
+): string[] {
+  const messages: string[] = [];
+
+  for (const [key, value] of Object.entries(collectedErrors)) {
+    if (value === undefined) {
+      continue;
+    }
+    const newPath = [...path, key];
+    if (value.collectedErrors) {
+      messages.push(
+        ...flattenCollectedErrorsTreeIntoMessages(
+          value.collectedErrors,
+          newPath,
+        ),
+      );
+    } else {
+      messages.push(
+        `error parsing object at path: "${prettyPrintPath(newPath)}" - ${
+          value.message
+        }`,
+      );
+    }
+  }
+  return messages;
+}
+
 export class ValidationError extends Error {
   name = "MyZodError";
   path?: (string | number)[];
@@ -142,14 +170,8 @@ export class ValidationError extends Error {
     collectedErrors?: Record<string, ValidationError | undefined>,
   ) {
     if (collectedErrors !== undefined) {
-      message = Object.values(collectedErrors)
-        .map(
-          (err) =>
-            `error parsing object at path: "${prettyPrintPath(
-              err?.path || [],
-            )}" - ${err?.message}`,
-        )
-        .join("\n");
+      message =
+        flattenCollectedErrorsTreeIntoMessages(collectedErrors).join("\n");
     }
     super(message);
     this.path = path;
@@ -249,10 +271,7 @@ export type IntersectionResult<T extends AnyType, K extends AnyType> =
     : IntersectionType<T, K>;
 
 type ErrMsg<T> = string | ((value: T) => string);
-type Predicate<T> = {
-  func: (value: T) => boolean;
-  errMsg?: ErrMsg<T>;
-};
+type Predicate<T> = { func: (value: T) => boolean; errMsg?: ErrMsg<T> };
 
 const normalizePredicates = <T>(
   predicate?: Predicate<T>["func"] | Predicate<T> | Predicate<T>[],
@@ -820,10 +839,7 @@ export class DateType
   }
 }
 
-export type ObjectShape = {
-  [key: string]: AnyType;
-  [keySignature]?: AnyType;
-};
+export type ObjectShape = { [key: string]: AnyType; [keySignature]?: AnyType };
 
 type OptionalKeys<T extends ObjectShape> = {
   [key in keyof T]: undefined extends Infer<T[key]>
@@ -890,9 +906,7 @@ type MergeShapes<T extends ObjectShape, K extends ObjectShape> = {
 
 export type StringTypes<T> = T extends string ? T : never;
 
-export type PathOptions = {
-  suppressPathErrMsg?: boolean;
-};
+export type PathOptions = { suppressPathErrMsg?: boolean };
 export type ObjectOptions<T extends ObjectShape> = {
   allowUnknown?: boolean;
   predicate?:
@@ -993,7 +1007,7 @@ export class ObjectType<T extends ObjectShape>
       : `error parsing object at path: "${prettyPrintPath(path)}" - ${
           err.message
         }`;
-    return new ValidationError(msg, path);
+    return new ValidationError(msg, path, err.collectedErrors);
   }
 
   private selectParser(): (
@@ -1491,8 +1505,7 @@ export class ObjectType<T extends ObjectShape>
         shape[keySignature] = keysig.optional();
       }
     }
-    // Do not transfer predicates or default value to new object shape as this
-    // would not be type-safe
+    // Do not transfer predicates or default value to new object shape as this would not be type-safe
     return new ObjectType(shape as any, {
       allowUnknown: this[allowUnknownSymbol],
     });
@@ -1930,8 +1943,7 @@ export class IntersectionType<
       (this.left as any)[coercionTypeSymbol] &&
       (this.right as any)[coercionTypeSymbol];
 
-    // if (this[coercionTypeSymbol] && Object.getPrototypeOf(this.left) !==
-    // Object.getPrototypeOf(this.right)) {
+    // if (this[coercionTypeSymbol] && Object.getPrototypeOf(this.left) !== Object.getPrototypeOf(this.right)) {
     // }
 
     (this as any)[allowUnknownSymbol] = !!(
@@ -2035,7 +2047,8 @@ export class EnumType<T>
     this.predicates = null;
     this.coerceOpt = opts.coerce;
     this.defaultValue = opts.defaultValue;
-    (this as any)[coercionTypeSymbol] = this.defaultValue !== undefined;
+    (this as any)[coercionTypeSymbol] =
+      this.defaultValue !== undefined || this.coerceOpt !== undefined;
   }
   parse(
     //@ts-ignore
@@ -2088,9 +2101,7 @@ export class EnumType<T>
 type DeepPartial<T> = {
   [key in keyof T]?: T[key] extends Object ? Eval<DeepPartial<T[key]>> : T[key];
 };
-export type PartialOpts = {
-  deep: boolean;
-};
+export type PartialOpts = { deep: boolean };
 
 function toPartialSchema(schema: AnyType, opts?: PartialOpts): AnyType {
   if (schema instanceof ObjectType) {
@@ -2149,8 +2160,7 @@ export class LazyType<T extends () => AnyType> extends Type<
 > {
   constructor(private readonly fn: T) {
     super();
-    // Since we can't know what the schema is we can't assume its not a
-    // coercionType and we need to disable the optimization
+    // Since we can't know what the schema is we can't assume its not a coercionType and we need to disable the optimization
     (this as any)[coercionTypeSymbol] = true;
   }
   parse(value: unknown, opts?: PathOptions): Infer<ReturnType<T>> {
