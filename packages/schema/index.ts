@@ -9,6 +9,7 @@ import {
   ArrayPrimitivePrefixRef,
   ArrayConstrainedTypes,
   NullPrimitive,
+  InferIngress,
 } from "./schema";
 
 export {
@@ -21,6 +22,7 @@ export {
   BoolPrimitiveFalse,
   ArrayPrimitivePrefixRef,
   NullPrimitive,
+  InferIngress,
 } from "./schema";
 
 export function string() {

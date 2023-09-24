@@ -2,6 +2,7 @@ import { Schema, ObjectShape, Infer } from "@redistedi/schema";
 import { RedisClientType } from "redis";
 import { Exit } from "@effect/io/Exit";
 import * as Effect from "@effect/io/Effect";
+import * as Context from "@effect/data/Context";
 import {
   object as ZObject,
   string as ZString,
@@ -28,6 +29,12 @@ interface EvalOptions {
   keys?: Array<string>;
   arguments?: Array<string>;
 }
+
+interface PersistEntityService {
+  connection: RedisClientType;
+  keyPrefix: EntityKeyPrefix;
+}
+const PersistEntityService = Context.Tag<PersistEntityService>();
 
 export type StediModel<T extends ObjectShape> = Infer<Schema<T>> & {
   toObject(): StediObject<T>;
@@ -129,32 +136,47 @@ export function rediBuilder<T extends ObjectShape>(
         return Effect.runSyncExit(
           Effect.fail(new ModelError("Redis client is undefined")),
         );
-      const { script, inputs } = luaEntityCreate(
-        [
-          `{rs:$entity$:$counter$:${modelName}}`,
-          `{rs:$entity$:${modelName}}:`,
-          "rs:$entity$:$ID$",
-        ],
-        [this.toJSON()],
-      );
-      const modelEffect = (reply: ZInfer<typeof saveLuaReply>) => {
-        const stediInstance = stediBuilder(
-          this.toObject(),
-          reply.id,
-          this[entityIDPrefixKey],
-          this[schemaKey],
-          this[connectionKey],
-        );
-        return Effect.succeed(new stediInstance());
-      };
+      const luaScriptArgs: [
+        EntityCounterPrefix,
+        EntityKeyPrefix,
+        EntityIDFieldPrefix,
+      ] = [
+        `{rs:$entity$:$counter$:${modelName}}`,
+        `{rs:$entity$:${modelName}}:`,
+        "rs:$entity$:$ID$",
+      ];
 
-      const effects = pipe(
-        persist(this[connectionKey], script, inputs),
-        Effect.flatMap(validateSaveReply),
-        Effect.flatMap(modelEffect),
+      const persistProgram = PersistEntityService.pipe(
+        Effect.flatMap((service) =>
+          toIngressJSON(this.toObject(), this[schemaKey]).pipe(
+            Effect.flatMap((parsedObj) => {
+              const { script, inputs } = luaEntityCreate(luaScriptArgs, [
+                parsedObj,
+              ]);
+              return persist(service.connection, script, inputs);
+            }),
+            Effect.flatMap(toPersistReply),
+            Effect.flatMap((reply) =>
+              toStediInstance<T>(
+                reply,
+                this.toObject(),
+                this[schemaKey],
+                service,
+              ),
+            ),
+          ),
+        ),
+      );
+      const runnableProgram = Effect.provideService(
+        persistProgram,
+        PersistEntityService,
+        PersistEntityService.of({
+          connection: this[connectionKey],
+          keyPrefix: this[entityIDPrefixKey],
+        }),
       );
 
-      return await Effect.runPromiseExit(effects);
+      return await Effect.runPromiseExit(runnableProgram);
     };
   }
 
@@ -179,7 +201,7 @@ function persist(
 
 function luaEntityCreate(
   keys: [EntityCounterPrefix, EntityKeyPrefix, EntityIDFieldPrefix],
-  argv: Array<any>,
+  argv: Array<string>,
 ) {
   return {
     script: `
@@ -232,7 +254,7 @@ export class ModelError extends Error {
 }
 
 // UTILS
-function validateSaveReply(obj: unknown) {
+function toPersistReply(obj: unknown) {
   return Effect.try({
     try: () => {
       return pipe(ZString().parse(obj), JSON.parse, (a) =>
@@ -241,4 +263,33 @@ function validateSaveReply(obj: unknown) {
     },
     catch: (caught) => new ModelError(caught),
   });
+}
+
+function toIngressJSON<T extends ObjectShape>(
+  obj: ModelObject<T>,
+  schema: Schema<T>,
+) {
+  return Effect.try({
+    try: () => {
+      const parsed = schema.parseIngress(obj);
+      return JSON.stringify(parsed);
+    },
+    catch: (caught) => new ModelError(caught),
+  });
+}
+
+function toStediInstance<T extends ObjectShape>(
+  reply: ZInfer<typeof saveLuaReply>,
+  obj: ModelObject<T>,
+  schema: Schema<T>,
+  service: PersistEntityService,
+) {
+  const stediInstance = stediBuilder<T>(
+    obj,
+    reply.id,
+    service.keyPrefix,
+    schema,
+    service.connection,
+  );
+  return Effect.succeed(new stediInstance());
 }

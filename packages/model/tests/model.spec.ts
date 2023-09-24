@@ -140,7 +140,7 @@ describe("RediModel.save", () => {
     assert.deepEqual(SUT, { "rs:$entity$:$ID$": "1", position: "2" });
   });
 
-  it.skip("persists model with BooleanType", async () => {
+  it("persists model with BooleanType", async () => {
     const obj = { position: boolean() };
     const schema = new Schema(obj);
     const builder = rediBuilder(schema, "modelName", client);
