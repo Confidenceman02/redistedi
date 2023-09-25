@@ -1,0 +1,5 @@
+node_modules
+.env
+
+# Makefile pseudo target
+/*.INSTALLED

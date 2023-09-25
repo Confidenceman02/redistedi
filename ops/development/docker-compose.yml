@@ -1,0 +1,11 @@
+version: '3.6'
+services:
+  redis-test:
+    image: redis/redis-stack:6.2.6-v4
+    ports:
+      - "6376:6379"
+    volumes:
+      - $PWD/config/testRedis.conf:/redis-stack.conf
+    command: redis-server /redis-stack.conf --loadmodule /opt/redis-stack/lib/redisearch.so
+    restart: always
+
