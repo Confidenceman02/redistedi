@@ -23,7 +23,7 @@ const saveLuaReply = ZObject({ response: ZNumber(), id: ZNumber() });
 type IdxPrefix = "rs:$entity$:";
 type EntityCounterPrefix = `{${IdxPrefix}$counter$:${string}}`;
 type EntityKeyPrefix = `{${IdxPrefix}${string}}:`;
-type EntityIDFieldPrefix = `${IdxPrefix}$ID$`;
+type EntityIDField = `${IdxPrefix}$ID$`;
 
 interface EvalOptions {
   keys?: Array<string>;
@@ -139,7 +139,7 @@ export function rediBuilder<T extends ObjectShape>(
       const luaScriptArgs: [
         EntityCounterPrefix,
         EntityKeyPrefix,
-        EntityIDFieldPrefix,
+        EntityIDField,
       ] = [
         `{rs:$entity$:$counter$:${modelName}}`,
         `{rs:$entity$:${modelName}}:`,
@@ -200,7 +200,7 @@ function persist(
 // LUA
 
 function luaEntityCreate(
-  keys: [EntityCounterPrefix, EntityKeyPrefix, EntityIDFieldPrefix],
+  keys: [EntityCounterPrefix, EntityKeyPrefix, EntityIDField],
   argv: Array<string>,
 ) {
   return {
@@ -208,7 +208,7 @@ function luaEntityCreate(
         local insert = table.insert
         local counterID = KEYS[1]
         local entityKeyPrefix = KEYS[2]
-        local entityIDFieldPrefix = KEYS[3]
+        local entityIDField = KEYS[3]
         local decodedObj = cjson.decode(ARGV[1])
 
         --[[
@@ -229,7 +229,7 @@ function luaEntityCreate(
 
         local builtArgs = ${HSETPrepare(
           "entityKeyPrefix",
-          "entityIDFieldPrefix",
+          "entityIDField",
           "incrID",
           "decodedObj",
         )}

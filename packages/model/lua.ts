@@ -1,7 +1,7 @@
 export function HSETFunc() {
   return `
-        local function buildCommand(keyPrefix,idPrefix,id,T)
-          local values = {"HSET", keyPrefix .. id, idPrefix, id}
+        local function buildCommand(keyPrefix,idField,idValue,T)
+          local values = {"HSET", keyPrefix .. idValue, idField, idValue}
           for k,v in pairs(T) do 
             insert(values, k)
             insert(values, v)
@@ -13,11 +13,11 @@ export function HSETFunc() {
 
 export function HSETPrepare(
   keyPrefix: string,
-  idPrefix: string,
+  idField: string,
   id: string,
   refString: string,
 ) {
-  return `buildCommand(${keyPrefix},${idPrefix},${id},${refString})`;
+  return `buildCommand(${keyPrefix},${idField},${id},${refString})`;
 }
 
 export function LogEncode(name: string) {
