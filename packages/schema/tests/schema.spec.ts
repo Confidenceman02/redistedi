@@ -1,7 +1,7 @@
 import { assert } from "chai";
 import {
   Schema,
-  NumberType,
+  IntegerType,
   StringType,
   BooleanType,
   EnumType,
@@ -33,13 +33,13 @@ describe("primitives", () => {
 
     assert.instanceOf(SUT, ZStringType);
   });
-  it("is a NumberType instance", () => {
-    const SUT = new NumberType();
+  it("is a IntegerType instance", () => {
+    const SUT = new IntegerType();
 
-    assert.instanceOf(SUT, NumberType);
+    assert.instanceOf(SUT, IntegerType);
   });
-  it("is a NumberType zod instance", () => {
-    const SUT = new NumberType().zodShape();
+  it("is a IntegerType zod instance", () => {
+    const SUT = new IntegerType().zodShape();
 
     assert.instanceOf(SUT, ZNumberType);
   });
@@ -121,8 +121,8 @@ describe("ingressShape", () => {
 
     assert.instanceOf(SUT.ingressShape(), ZMTypeClass);
   });
-  it("NullableType with NumberType returns ZMTypeClass", () => {
-    const SUT = new NullableType(new NumberType());
+  it("NullableType with IntegerType returns ZMTypeClass", () => {
+    const SUT = new NullableType(new IntegerType());
 
     assert.instanceOf(SUT.ingressShape(), ZMTypeClass);
   });
@@ -150,8 +150,8 @@ describe("ingressShape", () => {
 
     assert.instanceOf(SUT.ingressShape(), ZMTypeClass);
   });
-  it("NullableType with NullableType<NumberType> returns ZMTypeClass", () => {
-    const SUT = new NullableType(new NullableType(new NumberType()));
+  it("NullableType with NullableType<IntegerType> returns ZMTypeClass", () => {
+    const SUT = new NullableType(new NullableType(new IntegerType()));
 
     assert.instanceOf(SUT.ingressShape(), ZMTypeClass);
   });
@@ -181,10 +181,21 @@ describe("ingressParse", () => {
 
     assert.equal(SUT.ingressShape().parse("hello"), "hello");
   });
-  it("NumberType returns parsed number", () => {
-    const SUT = new NumberType();
+  it("IntegerType returns parsed number", () => {
+    const SUT = new IntegerType();
 
     assert.equal(SUT.ingressShape().parse(42), 42);
+  });
+  it("IntegerType errors parsing floats", () => {
+    const SUT = new IntegerType();
+
+    try {
+      SUT.ingressShape().parse(42.5);
+    } catch (err) {
+      return assert.instanceOf(err, Error);
+    }
+
+    assert.fail("IntegerType should not be able to parse floats");
   });
   it("BooleanType returns internal boolean primitive", () => {
     const SUT = new BooleanType();
@@ -263,18 +274,18 @@ describe("ingressParse", () => {
 
     assert.fail("Non Array type should have thrown.");
   });
-  it("NullableType with NumberType returns internal null primitive when null", () => {
-    const SUT = new NullableType(new NumberType());
+  it("NullableType with IntegerType returns internal null primitive when null", () => {
+    const SUT = new NullableType(new IntegerType());
 
     assert.equal(SUT.ingressShape().parse(null), NullPrimitive);
   });
-  it("NullableType with NumberType returns parsed number", () => {
-    const SUT = new NullableType(new NumberType());
+  it("NullableType with IntegerType returns parsed number", () => {
+    const SUT = new NullableType(new IntegerType());
 
     assert.equal(SUT.ingressShape().parse(23), 23);
   });
-  it("NullableType with NumberType returns error", () => {
-    const SUT = new NullableType(new NumberType());
+  it("NullableType with IntegerType returns error", () => {
+    const SUT = new NullableType(new IntegerType());
 
     try {
       SUT.ingressShape().parse([12]);
@@ -353,8 +364,8 @@ describe("Schema.parse", () => {
 
     assert.deepEqual(result, { hello: "world" });
   });
-  it("validates an object with NumberType", () => {
-    const obj = { hello: new NumberType() };
+  it("validates an object with IntegerType", () => {
+    const obj = { hello: new IntegerType() };
 
     const SUT = new Schema(obj);
 
@@ -414,8 +425,8 @@ describe("Schema.parseIngress", () => {
 
     assert.deepEqual(result, { hello: "world" });
   });
-  it("validates an object with NumberType", () => {
-    const obj = { hello: new NumberType() };
+  it("validates an object with IntegerType", () => {
+    const obj = { hello: new IntegerType() };
 
     const SUT = new Schema(obj);
 

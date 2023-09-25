@@ -2,7 +2,7 @@ import { assert, expect } from "chai";
 import {
   Schema,
   string,
-  number,
+  integer,
   boolean,
   BoolPrimitiveTrue,
 } from "@redistedi/schema";
@@ -127,8 +127,8 @@ describe("RediModel.save", () => {
     assert.deepEqual(SUT, { "rs:$entity$:$ID$": "1", hello: "world" });
   });
 
-  it("persists model with NumberType", async () => {
-    const obj = { position: number() };
+  it("persists model with IntegerType", async () => {
+    const obj = { position: integer() };
     const schema = new Schema(obj);
     const builder = rediBuilder(schema, "modelName", client);
 
@@ -138,6 +138,17 @@ describe("RediModel.save", () => {
     const SUT = await client.HGETALL("{rs:$entity$:modelName}:1");
 
     assert.deepEqual(SUT, { "rs:$entity$:$ID$": "1", position: "2" });
+  });
+
+  it("errors when IntegerType is a float", async () => {
+    const obj = { position: integer() };
+    const schema = new Schema(obj);
+    const builder = rediBuilder(schema, "modelName", client);
+
+    const obj1 = new builder({ position: 2.1 });
+    const SUT = await obj1.save();
+
+    assert.deepEqual(SUT._tag, "Failure");
   });
 
   it("persists model with BooleanType", async () => {

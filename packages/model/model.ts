@@ -149,9 +149,9 @@ export function rediBuilder<T extends ObjectShape>(
       const persistProgram = PersistEntityService.pipe(
         Effect.flatMap((service) =>
           toIngressJSON(this.toObject(), this[schemaKey]).pipe(
-            Effect.flatMap((parsedObj) => {
+            Effect.flatMap((ingressJSON) => {
               const { script, inputs } = luaEntityCreate(luaScriptArgs, [
-                parsedObj,
+                ingressJSON,
               ]);
               return persist(service.connection, script, inputs);
             }),

@@ -1,6 +1,6 @@
 import {
   StringType,
-  NumberType,
+  IntegerType,
   BooleanType,
   EnumType,
   ArrayType,
@@ -28,8 +28,8 @@ export {
 export function string() {
   return new StringType();
 }
-export function number() {
-  return new NumberType();
+export function integer() {
+  return new IntegerType();
 }
 export function boolean() {
   return new BooleanType();
@@ -42,7 +42,7 @@ export function array<T extends ArrayConstrainedTypes>(schema: T) {
 }
 export default {
   string,
-  number,
+  integer,
   boolean,
   enum: enumValue,
 };

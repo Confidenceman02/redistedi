@@ -124,7 +124,7 @@ export class NullableType<
         if (val !== null) return val;
         return NullPrimitive;
       });
-    if (this.schema instanceof NumberType)
+    if (this.schema instanceof IntegerType)
       return this.zodShape().map((val) => {
         if (val !== null) return val;
         return NullPrimitive;
@@ -166,12 +166,16 @@ export class StringType extends Type<string> {
   }
 }
 
-export class NumberType extends Type<number> {
+export class IntegerType extends Type<number> {
   constructor() {
     super(ZNumber());
   }
   ingressShape(): ZNumberType {
-    return ZNumber();
+    return ZNumber().withPredicate(
+      isInt,
+      (v) =>
+        `${v} can not be represented in IntegerType, use FloatType instead.`,
+    );
   }
 }
 
@@ -234,4 +238,9 @@ export class Schema<T extends ObjectShape> {
   parseIngress(value: unknown): InferIngress<Schema<T>> {
     return ZObject(this[zodIngressObject]).parse(value);
   }
+}
+
+// UTILS
+function isInt(n: number) {
+  return n % 1 === 0;
 }
